@@ -32,6 +32,7 @@ public class TriggerEvents implements Listener {
                     cancel();
                     player.removeScoreboardTag("iframe");
                     Recovery.runTaskLater(Dsplugin.getInstance(), 5);
+                    player.clearActivePotionEffects();
                     duration = 0;
                 } else {
                     player.setPose(Pose.SWIMMING);
