@@ -1,0 +1,5 @@
+name: dsplugin
+version: '1.0-SNAPSHOT'
+author: 'CrystalDino'
+main: org.cyril.dsplugin.Dsplugin
+api-version: '1.21'
