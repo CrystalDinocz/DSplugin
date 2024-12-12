@@ -1,5 +1,6 @@
 package org.cyril.dsplugin;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Pose;
 import org.bukkit.event.EventHandler;
@@ -9,9 +10,13 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
 import java.util.Set;
 
 public class TriggerEvents implements Listener {
+    Dsplugin dsInstance = new Dsplugin();
+    Test testInstance = new Test(dsInstance);
+    HashMap<String, Integer> stamina = dsInstance.getStamina();
     int i = 0;
     int duration = 0;
     @EventHandler
@@ -44,9 +49,17 @@ public class TriggerEvents implements Listener {
         };
         if(i == 1 && !player.getScoreboardTags().contains("recovery")) {
             if(player.getLocation().subtract(0,0.3,0).getBlock().isSolid()) {
-                player.addScoreboardTag("recovery");
-                player.addScoreboardTag("iframe");
-                RollFrames.runTaskTimer(Dsplugin.getInstance(), 0, 1);
+                stamina.putIfAbsent(player.getName() + "_stamina", 100);
+                if(stamina.get(player.getName() + "_stamina") >= 12) {
+                    stamina.put(player.getName() + "_stamina", stamina.get(player.getName() + "_stamina") - 12);
+                    testInstance.setMaxStamina(player.getName());
+                    testInstance.staminaRegen(player.getName());
+                    player.addScoreboardTag("recovery");
+                    player.addScoreboardTag("iframe");
+                    RollFrames.runTaskTimer(Dsplugin.getInstance(), 0, 1);
+                } else {
+                    player.sendMessage("Not enough stamina.");
+                }
             }
         }
         if(i == 2) {
@@ -68,6 +81,9 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        stamina.put(player.getName() + "_stamina", 0);
+        testInstance.setMaxStamina(player.getName());
+        testInstance.staminaRegen(player.getName());
         Set<String> tags = player.getScoreboardTags();
         for(String n : tags) {
             player.removeScoreboardTag(n);

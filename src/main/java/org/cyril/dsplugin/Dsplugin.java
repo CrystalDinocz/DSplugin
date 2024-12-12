@@ -4,9 +4,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.HashMap;
 import java.util.Set;
 
 public final class Dsplugin extends JavaPlugin {
+    HashMap<String, Integer> stamina = new HashMap<String, Integer>();
+    public HashMap<String, Integer> getStamina() {
+        return stamina;
+    }
     private static Dsplugin instance;
     @Override
     public void onEnable() {
