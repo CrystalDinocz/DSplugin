@@ -16,7 +16,7 @@ import java.util.Set;
 public class TriggerEvents implements Listener {
     Dsplugin dsInstance = new Dsplugin();
     Test testInstance = new Test(dsInstance);
-    HashMap<String, Integer> stamina = dsInstance.getStamina();
+    HashMap<String, Float> stamina = dsInstance.getStamina();
     int i = 0;
     int duration = 0;
     @EventHandler
@@ -49,8 +49,8 @@ public class TriggerEvents implements Listener {
         };
         if(i == 1 && !player.getScoreboardTags().contains("recovery")) {
             if(player.getLocation().subtract(0,0.3,0).getBlock().isSolid()) {
-                stamina.putIfAbsent(player.getName() + "_stamina", 100);
-                if(stamina.get(player.getName() + "_stamina") >= 12) {
+                stamina.putIfAbsent(player.getName() + "_stamina", 100F);
+                if(stamina.get(player.getName() + "_stamina") >= 1) {
                     stamina.put(player.getName() + "_stamina", stamina.get(player.getName() + "_stamina") - 12);
                     testInstance.setMaxStamina(player.getName());
                     testInstance.staminaRegen(player.getName());
@@ -81,7 +81,7 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        stamina.put(player.getName() + "_stamina", 0);
+        stamina.put(player.getName() + "_stamina", 0F);
         testInstance.setMaxStamina(player.getName());
         testInstance.staminaRegen(player.getName());
         Set<String> tags = player.getScoreboardTags();
