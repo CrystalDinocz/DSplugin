@@ -25,6 +25,7 @@ public final class Dsplugin extends JavaPlugin {
             for(String n : tags) {
                 player.removeScoreboardTag(n);
             }
+            player.kick();
         }
     }
     public static Dsplugin getInstance() {
