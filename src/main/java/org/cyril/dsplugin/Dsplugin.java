@@ -20,6 +20,7 @@ public final class Dsplugin extends JavaPlugin {
         System.out.println("\nDS Plugin\nON");
         getServer().getPluginManager().registerEvents(new TriggerEvents(), this);
         Bukkit.getBossBars().forEachRemaining(BossBar::removeAll);
+        Grace.graceParticles();
         for(Player player : Bukkit.getOnlinePlayers()) {
             Set<String> tags = player.getScoreboardTags();
             for(String n : tags) {

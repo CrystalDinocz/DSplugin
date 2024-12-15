@@ -15,7 +15,6 @@ public class Rolling {
             minusVector.multiply(0.01);
             minusVector.setY(-0.5);
             player.setVelocity(minusVector);
-            player.sendMessage("a");
         } else {
             Vector pVector = player.getLocation().getDirection();
             pVector.setY(0);
