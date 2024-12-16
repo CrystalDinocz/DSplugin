@@ -67,49 +67,51 @@ public class TriggerEvents implements Listener {
     }
     @EventHandler
     public void onShift(PlayerToggleSneakEvent event) {
-        i++;
         Player player = event.getPlayer();
-        BukkitRunnable Recovery = new BukkitRunnable() {
-            @Override
-            public void run() {
-                player.removeScoreboardTag("recovery");
-            }
-        };
-        BukkitRunnable RollFrames = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if(duration > 8) {
-                    cancel();
-                    player.removeScoreboardTag("iframe");
-                    Recovery.runTaskLater(Dsplugin.getInstance(), 5);
-                    player.clearActivePotionEffects();
-                    stamina.put(player.getName() + "_rollCount", stamina.get(player.getName() + "_rollCount") + 1);
-                    player.sendMessage(String.valueOf(stamina.get(player.getName() + "_rollCount")));
-                    duration = 0;
-                } else {
-                    player.setPose(Pose.SWIMMING);
-                    player.setSneaking(false);
-                    Rolling.Roll(player);
-                    duration++;
+        if(event.isSneaking()) {
+            BukkitRunnable Recovery = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    player.removeScoreboardTag("recovery");
+                }
+            };
+            BukkitRunnable RollFrames = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (duration > 8) {
+                        cancel();
+                        player.removeScoreboardTag("iframe");
+                        Recovery.runTaskLater(Dsplugin.getInstance(), 5);
+                        player.clearActivePotionEffects();
+                        if(player.getScoreboardTags().contains("rollCount_" + stamina.get(player.getName() + "_rollCount"))) {
+                            player.removeScoreboardTag("rollCount_" + stamina.get(player.getName() + "_rollCount"));
+                        }
+                        stamina.put(player.getName() + "_rollCount", stamina.get(player.getName() + "_rollCount") + 1);
+                        player.addScoreboardTag("rollCount_" + stamina.get(player.getName() + "_rollCount"));
+                        player.sendMessage(String.valueOf(stamina.get(player.getName() + "_rollCount")));
+                        duration = 0;
+                    } else {
+                        player.setPose(Pose.SWIMMING);
+                        player.setSneaking(false);
+                        Rolling.Roll(player);
+                        duration++;
+                    }
+                }
+            };
+            if(!player.getScoreboardTags().contains("recovery")) {
+                if (player.getLocation().subtract(0, 0.3, 0).getBlock().isSolid()) {
+                    if (stamina.get(player.getName() + "_stamina") >= 1) {
+                        stamina.put(player.getName() + "_stamina", stamina.get(player.getName() + "_stamina") - 12);
+                        testInstance.setMaxStamina(player.getName());
+                        testInstance.staminaRegen(player.getName());
+                        player.addScoreboardTag("recovery");
+                        player.addScoreboardTag("iframe");
+                        RollFrames.runTaskTimer(Dsplugin.getInstance(), 0, 1);
+                    } else {
+                        player.sendMessage("Not enough stamina.");
+                    }
                 }
             }
-        };
-        if(i == 1 && !player.getScoreboardTags().contains("recovery")) {
-            if(player.getLocation().subtract(0,0.3,0).getBlock().isSolid()) {
-                if(stamina.get(player.getName() + "_stamina") >= 1) {
-                    stamina.put(player.getName() + "_stamina", stamina.get(player.getName() + "_stamina") - 12);
-                    testInstance.setMaxStamina(player.getName());
-                    testInstance.staminaRegen(player.getName());
-                    player.addScoreboardTag("recovery");
-                    player.addScoreboardTag("iframe");
-                    RollFrames.runTaskTimer(Dsplugin.getInstance(), 0, 1);
-                } else {
-                    player.sendMessage("Not enough stamina.");
-                }
-            }
-        }
-        if(i == 2) {
-            i = 0;
         }
     }
     @EventHandler
@@ -156,13 +158,17 @@ public class TriggerEvents implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         stamina.put(player.getName() + "_stamina", 0F);
+        for(String tag : player.getScoreboardTags()) {
+            if(tag.contains("rollCount_")) {
+                Float lastValue = Float.valueOf(tag.replace("rollCount_", ""));
+                stamina.put(player.getName() + "_rollCount", lastValue);
+            }
+        }
         stamina.putIfAbsent(player.getName() + "_rollCount", 0F);
         testInstance.setMaxStamina(player.getName());
         testInstance.staminaRegen(player.getName());
-        Set<String> tags = player.getScoreboardTags();
-        for(String n : tags) {
-            player.removeScoreboardTag(n);
-        }
+        player.getScoreboardTags().clear();
+        player.addScoreboardTag("rollCount_" + stamina.get(player.getName() + "_rollCount"));
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {

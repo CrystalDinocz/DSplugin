@@ -1,12 +1,12 @@
 package org.cyril.dsplugin;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
-import java.util.Set;
 
 public final class Dsplugin extends JavaPlugin {
     HashMap<String, Float> stamina = new HashMap<String, Float>();
@@ -21,12 +21,11 @@ public final class Dsplugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new TriggerEvents(), this);
         Bukkit.getBossBars().forEachRemaining(BossBar::removeAll);
         Grace.graceParticles();
-        for(Player player : Bukkit.getOnlinePlayers()) {
-            Set<String> tags = player.getScoreboardTags();
-            for(String n : tags) {
-                player.removeScoreboardTag(n);
+        for(OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+            Player player = offlinePlayer.getPlayer();
+            if(player.isOnline()) {
+                player.kick();
             }
-            player.kick();
         }
     }
     public static Dsplugin getInstance() {
