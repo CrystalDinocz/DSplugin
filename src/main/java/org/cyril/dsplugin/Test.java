@@ -19,16 +19,16 @@ public class Test {
         dsInstance = dsplugin;
     }
     public void showStamina(String name) {
-        HashMap<String, Float> stamina = dsInstance.getStamina();
+        HashMap<String, Float> stats = dsInstance.getStats();
         Player player = Bukkit.getPlayer(name);
-        if(stamina.get(name + "_stamina") < 0) {
+        if(stats.get(name + "_stamina") < 0) {
             float progress = 0;
             staminaBar.setProgress(progress);
             staminaBar.setVisible(true);
             if(Bukkit.getOnlinePlayers().contains(player)) {
                 staminaBar.addPlayer(player);
             }
-        } else if (stamina.get(name + "_stamina") > stamina.get(name + "_maxStamina")) {
+        } else if (stats.get(name + "_stamina") > stats.get(name + "_maxStamina")) {
             float progress = 1;
             staminaBar.setProgress(progress);
             staminaBar.setVisible(true);
@@ -36,7 +36,7 @@ public class Test {
                 staminaBar.addPlayer(player);
             }
         } else {
-            float progress = (float) stamina.get(name + "_stamina") / stamina.get(name + "_maxStamina");
+            float progress = (float) stats.get(name + "_stamina") / stats.get(name + "_maxStamina");
             staminaBar.setProgress(progress);
             staminaBar.setVisible(true);
             if (Bukkit.getOnlinePlayers().contains(player)) {
@@ -45,22 +45,21 @@ public class Test {
         }
     }
     public void setMaxStamina(String name) {
-        HashMap<String, Float> stamina = dsInstance.getStamina();
-        stamina.put(name + "_maxStamina", finalMaxStamina);
-        Bukkit.getPlayer(name).sendMessage(stamina.entrySet().toString());
+        HashMap<String, Float> stats = dsInstance.getStats();
+        stats.put(name + "_maxStamina", finalMaxStamina);
     }
     public void staminaRegen(String name) {
-        HashMap<String, Float> stamina = dsInstance.getStamina();
+        HashMap<String, Float> stats = dsInstance.getStats();
         Player player = Bukkit.getPlayer(name);
         BukkitRunnable repeat = new BukkitRunnable() {
             @Override
             public void run() {
-                if(stamina.get(name + "_stamina") >= stamina.get(name + "_maxStamina")) {
-                    stamina.put(name + "_stamina", stamina.get(name + "_maxStamina"));
+                if(stats.get(name + "_stamina") >= stats.get(name + "_maxStamina")) {
+                    stats.put(name + "_stamina", stats.get(name + "_maxStamina"));
                     showStamina(name);
                     cancel();
                 } else {
-                    stamina.put(name + "_stamina", stamina.get(name + "_stamina") + (stamina.get(name + "_maxStamina") / 56));
+                    stats.put(name + "_stamina", stats.get(name + "_stamina") + (stats.get(name + "_maxStamina") / 56));
                     showStamina(name);
                 }
             }
