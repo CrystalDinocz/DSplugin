@@ -26,6 +26,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
@@ -33,6 +34,8 @@ public class TriggerEvents implements Listener {
     Dsplugin dsInstance = new Dsplugin();
     Test testInstance = new Test(dsInstance);
     HashMap<String, Float> stats = dsInstance.getStats();
+    HashMap<String, Location> baseLocation = new HashMap<String, Location>();
+    HashMap<String, Entity> sitEntities = new HashMap<String, Entity>();
     int duration = 0;
     public void uchigatana(Player player) {
         ItemStack sword = new ItemStack(Material.IRON_SWORD);
@@ -61,7 +64,7 @@ public class TriggerEvents implements Listener {
         //VIG
         ItemStack graceItem2 = new ItemStack(Material.APPLE);
         ItemMeta graceMeta2 = graceItem2.getItemMeta();
-        graceMeta2.displayName(Component.text("Vigor", NamedTextColor.RED).decoration(TextDecoration.ITALIC,false));
+        graceMeta2.displayName(Component.text("Vigor", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC,false));
         Lore.add(Component.text(Math.round(stats.get(player.getName() + "_vigor")) + " ➡ " + Math.round(stats.get(player.getName() + "_vigor") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         graceMeta2.lore(Lore);
         Lore.clear();
@@ -152,14 +155,19 @@ public class TriggerEvents implements Listener {
         player.openInventory(graceInventory);
     }
     public void grace(Player player) {
-        Location pLocation = player.getLocation();
+        BukkitTask sitDelay = new BukkitRunnable() {
+            @Override
+            public void run() {
+                Location sitLocation = baseLocation.get(player.getName()).clone();
+                sitLocation.subtract(0,1.6,0);
+                Entity graceSit = player.getWorld().spawnEntity(sitLocation, EntityType.ARMOR_STAND);
+                graceSit.addScoreboardTag(player.getName() + "_sit");
+                graceSit.setGravity(false);
+                graceSit.setInvisible(true);
+                graceSit.addPassenger(player);
+            }
+        }.runTaskLater(Dsplugin.getInstance(), 0);
         graceMenu(player);
-        pLocation.subtract(0,2,0);
-        Entity graceSit = player.getWorld().spawnEntity(pLocation, EntityType.ARMOR_STAND);
-        graceSit.addScoreboardTag("graceSit_" + player.getName());
-        graceSit.setGravity(false);
-        graceSit.setInvisible(true);
-        graceSit.addPassenger(player);
     }
     public void storeValues(Player player) {
         for(String tag : player.getScoreboardTags()) {
@@ -250,7 +258,6 @@ public class TriggerEvents implements Listener {
                         }
                         stats.put(player.getName() + "_rollCount", stats.get(player.getName() + "_rollCount") + 1);
                         player.addScoreboardTag("rollCount_" + stats.get(player.getName() + "_rollCount"));
-                        player.sendMessage("Rollcount: " + stats.get(player.getName() + "_rollCount"));
                         duration = 0;
                     } else {
                         player.setPose(Pose.SWIMMING);
@@ -320,6 +327,9 @@ public class TriggerEvents implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         stats.put(player.getName() + "_stamina", 0F);
+        if(player.getScoreboardTags().contains("reset")) {
+            player.getScoreboardTags().clear();
+        }
         storeValues(player);
         testInstance.setMaxStamina(player.getName());
         testInstance.staminaRegen(player.getName());
@@ -332,6 +342,7 @@ public class TriggerEvents implements Listener {
             if(event.getRightClicked().getScoreboardTags().contains("uchigatana")) {
                 uchigatana(player);
             } else if (event.getRightClicked().getScoreboardTags().contains("grace")) {
+                baseLocation.put(player.getName(), player.getLocation());
                 grace(player);
             }
         }
@@ -343,10 +354,9 @@ public class TriggerEvents implements Listener {
         graceMeta.displayName(Component.text("Level Up", NamedTextColor.YELLOW, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck.setItemMeta(graceMeta);
         if(event.getInventory().contains(graceCheck)) {
-            String sitSelector = String.format("@e[tag=graceSit_%s]", event.getPlayer().getName());
-            List<Entity> graceSit = Bukkit.selectEntities(Bukkit.getConsoleSender(), sitSelector);
-            for (Entity n : graceSit) {
-                n.remove();
+            String selector = String.format("@e[tag=%s_sit]", event.getPlayer().getName());
+            for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
+                entity.remove();
             }
         }
     }
@@ -354,11 +364,80 @@ public class TriggerEvents implements Listener {
     public void onInventoryInteract(InventoryClickEvent event) {
         ItemStack graceCheck = new ItemStack(Material.GOLD_NUGGET);
         ItemMeta graceMeta = graceCheck.getItemMeta();
+        Player player = (Player) event.getWhoClicked();
         graceMeta.displayName(Component.text("Level Up", NamedTextColor.YELLOW, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck.setItemMeta(graceMeta);
         if(event.getInventory().contains(graceCheck)) {
             event.setCancelled(true);
+            try {
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Vigor", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC,false))) {
+                    if(player.getScoreboardTags().contains("vigor_" + stats.get(player.getName() + "_vigor"))) {
+                        player.removeScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
+                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    }
+                    stats.put(player.getName() + "_vigor", stats.get(player.getName() + "_vigor") + 1);
+                    player.addScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
+                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Endurance", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC,false))) {
+                    if(player.getScoreboardTags().contains("endurance_" + stats.get(player.getName() + "_endurance"))) {
+                        player.removeScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
+                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    }
+                    stats.put(player.getName() + "_endurance", stats.get(player.getName() + "_endurance") + 1);
+                    player.addScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
+                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    testInstance.setMaxStamina(player.getName());
+                    testInstance.staminaRegen(player.getName());
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Mind", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC,false))) {
+                    if(player.getScoreboardTags().contains("mind_" + stats.get(player.getName() + "_mind"))) {
+                        player.removeScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
+                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    }
+                    stats.put(player.getName() + "_mind", stats.get(player.getName() + "_mind") + 1);
+                    player.addScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
+                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Strength", NamedTextColor.DARK_GREEN).decoration(TextDecoration.ITALIC,false))) {
+                    if(player.getScoreboardTags().contains("strength_" + stats.get(player.getName() + "_strength"))) {
+                        player.removeScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
+                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    }
+                    stats.put(player.getName() + "_strength", stats.get(player.getName() + "_strength") + 1);
+                    player.addScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
+                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Dexterity", NamedTextColor.RED).decoration(TextDecoration.ITALIC,false))) {
+                    if(player.getScoreboardTags().contains("dexterity_" + stats.get(player.getName() + "_dexterity"))) {
+                        player.removeScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
+                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    }
+                    stats.put(player.getName() + "_dexterity", stats.get(player.getName() + "_dexterity") + 1);
+                    player.addScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
+                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Intelligence", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC,false))) {
+                    if(player.getScoreboardTags().contains("intelligence_" + stats.get(player.getName() + "_intelligence"))) {
+                        player.removeScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
+                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    }
+                    stats.put(player.getName() + "_intelligence", stats.get(player.getName() + "_intelligence") + 1);
+                    player.addScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
+                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Your Stats", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC,false))) {
+                    player.sendMessage(event.getCurrentItem().displayName());
+                }
+                grace(player);
+            } catch (NullPointerException ignore) {
+            }
         }
-        event.getWhoClicked().sendMessage("sigma");
     }
 }

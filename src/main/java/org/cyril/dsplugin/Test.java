@@ -11,9 +11,7 @@ import java.util.HashMap;
 
 public class Test {
     HashMap<String, Integer> taskID = new HashMap<String, Integer>();
-    float baseMaxStamina = 100;
     BossBar staminaBar = Bukkit.createBossBar("§2Stamina", BarColor.GREEN, BarStyle.SOLID);
-    float finalMaxStamina = baseMaxStamina + 20;
     Dsplugin dsInstance;
     public Test(Dsplugin dsplugin) {
         dsInstance = dsplugin;
@@ -46,7 +44,23 @@ public class Test {
     }
     public void setMaxStamina(String name) {
         HashMap<String, Float> stats = dsInstance.getStats();
-        stats.put(name + "_maxStamina", finalMaxStamina);
+        float maxStamina = 100;
+        for(float a = 1; a <= stats.get(name + "_endurance"); a = a + 1) {
+            if(a != 1.0) {
+                if(a <= 30.0) {
+                    if(a % 2 == 0) {
+                        maxStamina = maxStamina + 2;
+                    } else {
+                        maxStamina = maxStamina + 1;
+                    }
+                } else {
+                    maxStamina = maxStamina + 1;
+                }
+            }
+            if(a == stats.get(name + "_endurance")) {
+                stats.put(name + "_maxStamina", maxStamina);
+            }
+        }
     }
     public void staminaRegen(String name) {
         HashMap<String, Float> stats = dsInstance.getStats();
