@@ -12,6 +12,7 @@ import java.util.HashMap;
 public class Test {
     HashMap<String, Integer> taskID = new HashMap<String, Integer>();
     BossBar staminaBar = Bukkit.createBossBar("§2Stamina", BarColor.GREEN, BarStyle.SOLID);
+    BossBar FPBar = Bukkit.createBossBar("§9FP", BarColor.BLUE, BarStyle.SOLID);
     Dsplugin dsInstance;
     public Test(Dsplugin dsplugin) {
         dsInstance = dsplugin;
@@ -42,6 +43,16 @@ public class Test {
             }
         }
     }
+    public void showFP(String name) {
+        HashMap<String, Float> stats = dsInstance.getStats();
+        Player player = Bukkit.getPlayer(name);
+        float progress = (float) stats.get(name + "_FP") / stats.get(name + "_maxFP");
+        FPBar.setProgress(progress);
+        FPBar.setVisible(true);
+        if (Bukkit.getOnlinePlayers().contains(player)) {
+            FPBar.addPlayer(player);
+        }
+    }
     public void setMaxStamina(String name) {
         HashMap<String, Float> stats = dsInstance.getStats();
         float maxStamina = 100;
@@ -60,6 +71,21 @@ public class Test {
             if(a == stats.get(name + "_endurance")) {
                 stats.put(name + "_maxStamina", maxStamina);
             }
+        }
+    }
+    public void setMaxFP(String name) {
+        HashMap<String, Float> stats = dsInstance.getStats();
+        if(stats.get(name + "_mind") <= 15) {
+            int maxFP = (int) (50 + (45*((stats.get(name + "_mind") - 1) / 14)));
+            stats.put(name + "_maxFP", (float) maxFP);
+        }
+        if(stats.get(name + "_mind") >= 16 && stats.get(name + "_mind") <= 35) {
+            int maxFP = (int) (95 + (105*((stats.get(name + "_mind") - 15) / 20)));
+            stats.put(name + "_maxFP", (float) maxFP);
+        }
+        if(stats.get(name + "_mind") >= 36) {
+            int maxFP = (int) (200 + (150 * (1 - Math.pow(1 - ((stats.get(name + "_mind") - 35) / 25), 1.2))));
+            stats.put(name + "_maxFP", (float) maxFP);
         }
     }
     public void staminaRegen(String name) {

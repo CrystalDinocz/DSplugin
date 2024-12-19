@@ -65,7 +65,11 @@ public class TriggerEvents implements Listener {
         ItemStack graceItem2 = new ItemStack(Material.APPLE);
         ItemMeta graceMeta2 = graceItem2.getItemMeta();
         graceMeta2.displayName(Component.text("Vigor", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC,false));
-        Lore.add(Component.text(Math.round(stats.get(player.getName() + "_vigor")) + " ➡ " + Math.round(stats.get(player.getName() + "_vigor") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        if(stats.get(player.getName() + "_vigor") < 50) {
+            Lore.add(Component.text(Math.round(stats.get(player.getName() + "_vigor")) + " ➡ " + Math.round(stats.get(player.getName() + "_vigor") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        } else {
+            Lore.add(Component.text("MAX LEVEL", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        }
         graceMeta2.lore(Lore);
         Lore.clear();
         graceItem2.setItemMeta(graceMeta2);
@@ -73,7 +77,11 @@ public class TriggerEvents implements Listener {
         ItemStack graceItem3 = new ItemStack(Material.RABBIT_FOOT);
         ItemMeta graceMeta3 = graceItem3.getItemMeta();
         graceMeta3.displayName(Component.text("Endurance", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC,false));
-        Lore.add(Component.text(Math.round(stats.get(player.getName() + "_endurance")) + " ➡ " + Math.round(stats.get(player.getName() + "_endurance") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        if(stats.get(player.getName() + "_endurance") < 50) {
+            Lore.add(Component.text(Math.round(stats.get(player.getName() + "_endurance")) + " ➡ " + Math.round(stats.get(player.getName() + "_endurance") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        } else {
+            Lore.add(Component.text("MAX LEVEL", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        }
         graceMeta3.lore(Lore);
         Lore.clear();
         graceItem3.setItemMeta(graceMeta3);
@@ -81,7 +89,11 @@ public class TriggerEvents implements Listener {
         ItemStack graceItem4 = new ItemStack(Material.EXPERIENCE_BOTTLE);
         ItemMeta graceMeta4 = graceItem4.getItemMeta();
         graceMeta4.displayName(Component.text("Mind", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC,false));
-        Lore.add(Component.text(Math.round(stats.get(player.getName() + "_mind")) + " ➡ " + Math.round(stats.get(player.getName() + "_mind") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        if(stats.get(player.getName() + "_mind") < 50) {
+            Lore.add(Component.text(Math.round(stats.get(player.getName() + "_mind")) + " ➡ " + Math.round(stats.get(player.getName() + "_mind") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        } else {
+            Lore.add(Component.text("MAX LEVEL", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        }
         graceMeta4.lore(Lore);
         Lore.clear();
         graceItem4.setItemMeta(graceMeta4);
@@ -89,7 +101,11 @@ public class TriggerEvents implements Listener {
         ItemStack graceItem5 = new ItemStack(Material.IRON_AXE);
         ItemMeta graceMeta5 = graceItem5.getItemMeta();
         graceMeta5.displayName(Component.text("Strength", NamedTextColor.DARK_GREEN).decoration(TextDecoration.ITALIC,false));
-        Lore.add(Component.text(Math.round(stats.get(player.getName() + "_strength")) + " ➡ " + Math.round(stats.get(player.getName() + "_strength") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        if(stats.get(player.getName() + "_strength") < 50) {
+            Lore.add(Component.text(Math.round(stats.get(player.getName() + "_strength")) + " ➡ " + Math.round(stats.get(player.getName() + "_strength") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        } else {
+            Lore.add(Component.text("MAX LEVEL", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        }
         graceMeta5.lore(Lore);
         Lore.clear();
         graceMeta5.addAttributeModifier(Attribute.LUCK, dummyAttribute);
@@ -99,7 +115,11 @@ public class TriggerEvents implements Listener {
         ItemStack graceItem6 = new ItemStack(Material.IRON_SWORD);
         ItemMeta graceMeta6 = graceItem6.getItemMeta();
         graceMeta6.displayName(Component.text("Dexterity", NamedTextColor.RED).decoration(TextDecoration.ITALIC,false));
-        Lore.add(Component.text(Math.round(stats.get(player.getName() + "_dexterity")) + " ➡ " + Math.round(stats.get(player.getName() + "_dexterity") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        if(stats.get(player.getName() + "_dexterity") < 50) {
+            Lore.add(Component.text(Math.round(stats.get(player.getName() + "_dexterity")) + " ➡ " + Math.round(stats.get(player.getName() + "_dexterity") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        } else {
+            Lore.add(Component.text("MAX LEVEL", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        }
         graceMeta6.lore(Lore);
         Lore.clear();
         graceMeta6.addAttributeModifier(Attribute.LUCK, dummyAttribute);
@@ -109,7 +129,11 @@ public class TriggerEvents implements Listener {
         ItemStack graceItem7 = new ItemStack(Material.KNOWLEDGE_BOOK);
         ItemMeta graceMeta7 = graceItem7.getItemMeta();
         graceMeta7.displayName(Component.text("Intelligence", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC,false));
-        Lore.add(Component.text(Math.round(stats.get(player.getName() + "_intelligence")) + " ➡ " + Math.round(stats.get(player.getName() + "_intelligence") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        if(stats.get(player.getName() + "_intelligence") < 50) {
+            Lore.add(Component.text(Math.round(stats.get(player.getName() + "_intelligence")) + " ➡ " + Math.round(stats.get(player.getName() + "_intelligence") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        } else {
+            Lore.add(Component.text("MAX LEVEL", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        }
         graceMeta7.lore(Lore);
         Lore.clear();
         graceItem7.setItemMeta(graceMeta7);
@@ -118,7 +142,11 @@ public class TriggerEvents implements Listener {
         SkullMeta skullMeta = (SkullMeta) playerStats.getItemMeta();
         skullMeta.setOwningPlayer(player);
         skullMeta.displayName(Component.text("Your Stats", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC,false));
-        Lore.add(Component.text("Level: " + Math.round(stats.get(player.getName() + "_level")) + " ➡ " + Math.round(stats.get(player.getName() + "_level") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        if(stats.get(player.getName() + "_level") < 295) {
+            Lore.add(Component.text("Level: " + Math.round(stats.get(player.getName() + "_level")) + " ➡ " + Math.round(stats.get(player.getName() + "_level") + 1), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        } else {
+            Lore.add(Component.text("Level: " + Math.round(stats.get(player.getName() + "_level")), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        }
         Lore.add(Component.text(""));
         Lore.add(Component.text("Runes Held: " + Math.round(stats.get(player.getName() + "_runesHeld")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         Lore.add(Component.text("Runes Needed: " + Math.round(stats.get(player.getName() + "_runesNeeded")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
@@ -326,11 +354,14 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        stats.put(player.getName() + "_stamina", 0F);
         if(player.getScoreboardTags().contains("reset")) {
             player.getScoreboardTags().clear();
         }
         storeValues(player);
+        testInstance.setMaxFP(player.getName());
+        stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
+        testInstance.showFP(player.getName());
+        stats.put(player.getName() + "_stamina", 0F);
         testInstance.setMaxStamina(player.getName());
         testInstance.staminaRegen(player.getName());
         player.sendMessage(stats.entrySet().toString());
@@ -349,6 +380,7 @@ public class TriggerEvents implements Listener {
     }
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
+        Player player = (Player) event.getPlayer();
         ItemStack graceCheck = new ItemStack(Material.GOLD_NUGGET);
         ItemMeta graceMeta = graceCheck.getItemMeta();
         graceMeta.displayName(Component.text("Level Up", NamedTextColor.YELLOW, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
@@ -358,7 +390,10 @@ public class TriggerEvents implements Listener {
             for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
                 entity.remove();
             }
+            stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
+            testInstance.showFP(player.getName());
         }
+
     }
     @EventHandler
     public void onInventoryInteract(InventoryClickEvent event) {
@@ -371,66 +406,92 @@ public class TriggerEvents implements Listener {
             event.setCancelled(true);
             try {
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Vigor", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC,false))) {
-                    if(player.getScoreboardTags().contains("vigor_" + stats.get(player.getName() + "_vigor"))) {
-                        player.removeScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
-                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    if(stats.get(player.getName() + "_vigor") < 50) {
+                        if (player.getScoreboardTags().contains("vigor_" + stats.get(player.getName() + "_vigor"))) {
+                            player.removeScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
+                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        }
+                        stats.put(player.getName() + "_vigor", stats.get(player.getName() + "_vigor") + 1);
+                        player.addScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
+                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    } else {
+                        player.sendMessage(Component.text("Vigor is already at the maximum level.", NamedTextColor.RED));
                     }
-                    stats.put(player.getName() + "_vigor", stats.get(player.getName() + "_vigor") + 1);
-                    player.addScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
-                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Endurance", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC,false))) {
-                    if(player.getScoreboardTags().contains("endurance_" + stats.get(player.getName() + "_endurance"))) {
-                        player.removeScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
-                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    if(stats.get(player.getName() + "_endurance") < 50) {
+                        if (player.getScoreboardTags().contains("endurance_" + stats.get(player.getName() + "_endurance"))) {
+                            player.removeScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
+                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        }
+                        stats.put(player.getName() + "_endurance", stats.get(player.getName() + "_endurance") + 1);
+                        player.addScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
+                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        testInstance.setMaxStamina(player.getName());
+                        testInstance.staminaRegen(player.getName());
+                    } else {
+                        player.sendMessage(Component.text("Endurance is already at the maximum level.", NamedTextColor.RED));
                     }
-                    stats.put(player.getName() + "_endurance", stats.get(player.getName() + "_endurance") + 1);
-                    player.addScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
-                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
-                    testInstance.setMaxStamina(player.getName());
-                    testInstance.staminaRegen(player.getName());
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Mind", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC,false))) {
-                    if(player.getScoreboardTags().contains("mind_" + stats.get(player.getName() + "_mind"))) {
-                        player.removeScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
-                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    if(stats.get(player.getName() + "_mind") < 50) {
+                        if (player.getScoreboardTags().contains("mind_" + stats.get(player.getName() + "_mind"))) {
+                            player.removeScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
+                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        }
+                        stats.put(player.getName() + "_mind", stats.get(player.getName() + "_mind") + 1);
+                        player.addScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
+                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        testInstance.setMaxFP(player.getName());
+                        testInstance.showFP(player.getName());
+                    } else {
+                        player.sendMessage(Component.text("Mind is already at the maximum level.", NamedTextColor.RED));
                     }
-                    stats.put(player.getName() + "_mind", stats.get(player.getName() + "_mind") + 1);
-                    player.addScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
-                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Strength", NamedTextColor.DARK_GREEN).decoration(TextDecoration.ITALIC,false))) {
-                    if(player.getScoreboardTags().contains("strength_" + stats.get(player.getName() + "_strength"))) {
-                        player.removeScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
-                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    if(stats.get(player.getName() + "_strength") < 50) {
+                        if (player.getScoreboardTags().contains("strength_" + stats.get(player.getName() + "_strength"))) {
+                            player.removeScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
+                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        }
+                        stats.put(player.getName() + "_strength", stats.get(player.getName() + "_strength") + 1);
+                        player.addScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
+                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    } else {
+                        player.sendMessage(Component.text("Strength is already at the maximum level.", NamedTextColor.RED));
                     }
-                    stats.put(player.getName() + "_strength", stats.get(player.getName() + "_strength") + 1);
-                    player.addScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
-                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Dexterity", NamedTextColor.RED).decoration(TextDecoration.ITALIC,false))) {
-                    if(player.getScoreboardTags().contains("dexterity_" + stats.get(player.getName() + "_dexterity"))) {
-                        player.removeScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
-                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    if(stats.get(player.getName() + "_dexterity") < 50) {
+                        if (player.getScoreboardTags().contains("dexterity_" + stats.get(player.getName() + "_dexterity"))) {
+                            player.removeScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
+                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        }
+                        stats.put(player.getName() + "_dexterity", stats.get(player.getName() + "_dexterity") + 1);
+                        player.addScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
+                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    } else {
+                        player.sendMessage(Component.text("Dexterity is already at the maximum level.", NamedTextColor.RED));
                     }
-                    stats.put(player.getName() + "_dexterity", stats.get(player.getName() + "_dexterity") + 1);
-                    player.addScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
-                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Intelligence", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC,false))) {
-                    if(player.getScoreboardTags().contains("intelligence_" + stats.get(player.getName() + "_intelligence"))) {
-                        player.removeScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
-                        player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    if(stats.get(player.getName() + "_intelligence") < 50) {
+                        if (player.getScoreboardTags().contains("intelligence_" + stats.get(player.getName() + "_intelligence"))) {
+                            player.removeScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
+                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        }
+                        stats.put(player.getName() + "_intelligence", stats.get(player.getName() + "_intelligence") + 1);
+                        player.addScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
+                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                    } else {
+                        player.sendMessage(Component.text("Intelligence is already at the maximum level.", NamedTextColor.RED));
                     }
-                    stats.put(player.getName() + "_intelligence", stats.get(player.getName() + "_intelligence") + 1);
-                    player.addScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
-                    stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                    player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Your Stats", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC,false))) {
                     player.sendMessage(event.getCurrentItem().displayName());
@@ -438,6 +499,17 @@ public class TriggerEvents implements Listener {
                 grace(player);
             } catch (NullPointerException ignore) {
             }
+        }
+    }
+    @EventHandler
+    public void onPlayerFish(PlayerFishEvent event) {
+        Player player = event.getPlayer();
+        if(stats.get(player.getName() + "_FP") >= 12) {
+            stats.put(player.getName() + "_FP", stats.get(player.getName() + "_FP") - 12);
+            player.sendMessage("Current FP: " + stats.get(player.getName() + "_FP"));
+            testInstance.showFP(player.getName());
+        } else {
+            player.sendMessage("Not enough FP.");
         }
     }
 }
