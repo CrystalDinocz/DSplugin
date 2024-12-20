@@ -13,8 +13,12 @@ public final class Dsplugin extends JavaPlugin {
         return stats;
     }
     private static Dsplugin instance;
+    private void commandRegister() {
+        Bukkit.getCommandMap().register("rune", new TestCommand("rune"));
+    }
     @Override
     public void onEnable() {
+        commandRegister();
         instance = this;
         System.out.println("\nDS Plugin\nON");
         getServer().getPluginManager().registerEvents(new TriggerEvents(), this);

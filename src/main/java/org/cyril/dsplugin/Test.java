@@ -88,6 +88,15 @@ public class Test {
             stats.put(name + "_maxFP", (float) maxFP);
         }
     }
+    public void setRunesNeeded(String name) {
+        HashMap<String, Float> stats = dsInstance.getStats();
+        double x = (((stats.get(name + "_level") + 81) - 92) * 0.02);
+        if(x < 0) {
+            x = 0;
+        }
+        int runesNeeded = (int) (((x + 0.1) * Math.pow(stats.get(name + "_level") + 81, 2)) + 1);
+        stats.put(name + "_runesNeeded", (float) runesNeeded);
+    }
     public void staminaRegen(String name) {
         HashMap<String, Float> stats = dsInstance.getStats();
         Player player = Bukkit.getPlayer(name);

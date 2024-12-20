@@ -17,6 +17,7 @@ import org.bukkit.entity.Pose;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
@@ -35,7 +36,6 @@ public class TriggerEvents implements Listener {
     Test testInstance = new Test(dsInstance);
     HashMap<String, Float> stats = dsInstance.getStats();
     HashMap<String, Location> baseLocation = new HashMap<String, Location>();
-    HashMap<String, Entity> sitEntities = new HashMap<String, Entity>();
     int duration = 0;
     public void uchigatana(Player player) {
         ItemStack sword = new ItemStack(Material.IRON_SWORD);
@@ -249,8 +249,8 @@ public class TriggerEvents implements Listener {
         stats.putIfAbsent(player.getName() + "_mind", 1F);
         stats.putIfAbsent(player.getName() + "_intelligence", 1F);
         stats.putIfAbsent(player.getName() + "_runesHeld", 0F);
-        stats.putIfAbsent(player.getName() + "_runesNeeded", 1F);
         stats.putIfAbsent(player.getName() + "_level", 1F);
+        testInstance.setRunesNeeded(player.getName());
         player.getScoreboardTags().clear();
         player.addScoreboardTag("rollCount_" + stats.get(player.getName() + "_rollCount"));
         player.addScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
@@ -407,88 +407,148 @@ public class TriggerEvents implements Listener {
             try {
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Vigor", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC,false))) {
                     if(stats.get(player.getName() + "_vigor") < 50) {
-                        if (player.getScoreboardTags().contains("vigor_" + stats.get(player.getName() + "_vigor"))) {
-                            player.removeScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
-                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        if(stats.get(player.getName() + "_runesHeld") >= stats.get(player.getName() + "_runesNeeded")) {
+                            player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") - stats.get(player.getName() + "_runesNeeded"));
+                            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            if (player.getScoreboardTags().contains("vigor_" + stats.get(player.getName() + "_vigor"))) {
+                                player.removeScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
+                                player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                                player.removeScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            }
+                            stats.put(player.getName() + "_vigor", stats.get(player.getName() + "_vigor") + 1);
+                            player.addScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
+                            stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                            player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                            testInstance.setRunesNeeded(player.getName());
+                            player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                        } else {
+                            player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
-                        stats.put(player.getName() + "_vigor", stats.get(player.getName() + "_vigor") + 1);
-                        player.addScoreboardTag("vigor_" + stats.get(player.getName() + "_vigor"));
-                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                     } else {
                         player.sendMessage(Component.text("Vigor is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Endurance", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC,false))) {
                     if(stats.get(player.getName() + "_endurance") < 50) {
-                        if (player.getScoreboardTags().contains("endurance_" + stats.get(player.getName() + "_endurance"))) {
-                            player.removeScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
-                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        if(stats.get(player.getName() + "_runesHeld") >= stats.get(player.getName() + "_runesNeeded")) {
+                            player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") - stats.get(player.getName() + "_runesNeeded"));
+                            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            if (player.getScoreboardTags().contains("endurance_" + stats.get(player.getName() + "_endurance"))) {
+                                player.removeScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
+                                player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                                player.removeScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            }
+                            stats.put(player.getName() + "_endurance", stats.get(player.getName() + "_endurance") + 1);
+                            player.addScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
+                            stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                            player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                            testInstance.setRunesNeeded(player.getName());
+                            player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            testInstance.setMaxStamina(player.getName());
+                            testInstance.staminaRegen(player.getName());
+                        } else {
+                            player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
-                        stats.put(player.getName() + "_endurance", stats.get(player.getName() + "_endurance") + 1);
-                        player.addScoreboardTag("endurance_" + stats.get(player.getName() + "_endurance"));
-                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
-                        testInstance.setMaxStamina(player.getName());
-                        testInstance.staminaRegen(player.getName());
                     } else {
                         player.sendMessage(Component.text("Endurance is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Mind", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC,false))) {
                     if(stats.get(player.getName() + "_mind") < 50) {
-                        if (player.getScoreboardTags().contains("mind_" + stats.get(player.getName() + "_mind"))) {
-                            player.removeScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
-                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        if(stats.get(player.getName() + "_runesHeld") >= stats.get(player.getName() + "_runesNeeded")) {
+                            player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") - stats.get(player.getName() + "_runesNeeded"));
+                            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            if (player.getScoreboardTags().contains("mind_" + stats.get(player.getName() + "_mind"))) {
+                                player.removeScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
+                                player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                                player.removeScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            }
+                            stats.put(player.getName() + "_mind", stats.get(player.getName() + "_mind") + 1);
+                            player.addScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
+                            stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                            player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                            testInstance.setRunesNeeded(player.getName());
+                            player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            testInstance.setMaxFP(player.getName());
+                            testInstance.showFP(player.getName());
+                        } else {
+                            player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
-                        stats.put(player.getName() + "_mind", stats.get(player.getName() + "_mind") + 1);
-                        player.addScoreboardTag("mind_" + stats.get(player.getName() + "_mind"));
-                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
-                        testInstance.setMaxFP(player.getName());
-                        testInstance.showFP(player.getName());
                     } else {
                         player.sendMessage(Component.text("Mind is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Strength", NamedTextColor.DARK_GREEN).decoration(TextDecoration.ITALIC,false))) {
                     if(stats.get(player.getName() + "_strength") < 50) {
-                        if (player.getScoreboardTags().contains("strength_" + stats.get(player.getName() + "_strength"))) {
-                            player.removeScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
-                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        if(stats.get(player.getName() + "_runesHeld") >= stats.get(player.getName() + "_runesNeeded")) {
+                            player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") - stats.get(player.getName() + "_runesNeeded"));
+                            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            if (player.getScoreboardTags().contains("strength_" + stats.get(player.getName() + "_strength"))) {
+                                player.removeScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
+                                player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                                player.removeScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            }
+                            stats.put(player.getName() + "_strength", stats.get(player.getName() + "_strength") + 1);
+                            player.addScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
+                            stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                            player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                            testInstance.setRunesNeeded(player.getName());
+                            player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                        } else {
+                            player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
-                        stats.put(player.getName() + "_strength", stats.get(player.getName() + "_strength") + 1);
-                        player.addScoreboardTag("strength_" + stats.get(player.getName() + "_strength"));
-                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                     } else {
                         player.sendMessage(Component.text("Strength is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Dexterity", NamedTextColor.RED).decoration(TextDecoration.ITALIC,false))) {
                     if(stats.get(player.getName() + "_dexterity") < 50) {
-                        if (player.getScoreboardTags().contains("dexterity_" + stats.get(player.getName() + "_dexterity"))) {
-                            player.removeScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
-                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        if(stats.get(player.getName() + "_runesHeld") >= stats.get(player.getName() + "_runesNeeded")) {
+                            player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") - stats.get(player.getName() + "_runesNeeded"));
+                            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            if (player.getScoreboardTags().contains("dexterity_" + stats.get(player.getName() + "_dexterity"))) {
+                                player.removeScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
+                                player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                                player.removeScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            }
+                            stats.put(player.getName() + "_dexterity", stats.get(player.getName() + "_dexterity") + 1);
+                            player.addScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
+                            stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                            player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                            testInstance.setRunesNeeded(player.getName());
+                            player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                        } else {
+                            player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
-                        stats.put(player.getName() + "_dexterity", stats.get(player.getName() + "_dexterity") + 1);
-                        player.addScoreboardTag("dexterity_" + stats.get(player.getName() + "_dexterity"));
-                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                     } else {
                         player.sendMessage(Component.text("Dexterity is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Intelligence", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC,false))) {
                     if(stats.get(player.getName() + "_intelligence") < 50) {
-                        if (player.getScoreboardTags().contains("intelligence_" + stats.get(player.getName() + "_intelligence"))) {
-                            player.removeScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
-                            player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                        if(stats.get(player.getName() + "_runesHeld") >= stats.get(player.getName() + "_runesNeeded")) {
+                            player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") - stats.get(player.getName() + "_runesNeeded"));
+                            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                            if (player.getScoreboardTags().contains("intelligence_" + stats.get(player.getName() + "_intelligence"))) {
+                                player.removeScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
+                                player.removeScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                                player.removeScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            }
+                            stats.put(player.getName() + "_intelligence", stats.get(player.getName() + "_intelligence") + 1);
+                            player.addScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
+                            stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
+                            player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+                            testInstance.setRunesNeeded(player.getName());
+                            player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                        } else {
+                            player.sendMessage(Component.text("You don't have enough runes.", NamedTextColor.RED));
                         }
-                        stats.put(player.getName() + "_intelligence", stats.get(player.getName() + "_intelligence") + 1);
-                        player.addScoreboardTag("intelligence_" + stats.get(player.getName() + "_intelligence"));
-                        stats.put(player.getName() + "_level", stats.get(player.getName() + "_level") + 1);
-                        player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                     } else {
                         player.sendMessage(Component.text("Intelligence is already at the maximum level.", NamedTextColor.RED));
                     }
@@ -510,6 +570,17 @@ public class TriggerEvents implements Listener {
             testInstance.showFP(player.getName());
         } else {
             player.sendMessage("Not enough FP.");
+        }
+    }
+    @EventHandler
+    public void onPlayerKill(EntityDeathEvent event) {
+        if(event.getDamageSource().getCausingEntity() instanceof Player) {
+            Player player = (Player) event.getDamageSource().getCausingEntity();
+            if(player.getScoreboardTags().contains("runesHeld_" + stats.get(player.getName() + "_runesHeld"))) {
+                player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+            }
+            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") + 1000);
+            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
         }
     }
 }
