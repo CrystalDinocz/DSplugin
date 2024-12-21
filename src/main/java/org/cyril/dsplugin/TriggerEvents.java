@@ -4,16 +4,10 @@ import io.papermc.paper.event.player.PlayerArmSwingEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Pose;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -21,6 +15,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -28,6 +23,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.*;
 
@@ -37,6 +33,67 @@ public class TriggerEvents implements Listener {
     HashMap<String, Float> stats = dsInstance.getStats();
     HashMap<String, Location> baseLocation = new HashMap<String, Location>();
     int duration = 0;
+    public void summonTorrent(Player player) {
+        Location pLocation = player.getLocation();
+        Horse torrent = (Horse) player.getWorld().spawnEntity(pLocation, EntityType.HORSE);
+        torrent.setAdult();
+        torrent.setTamed(true);
+        torrent.setAI(false);
+        torrent.setColor(Horse.Color.GRAY);
+        torrent.setStyle(Horse.Style.WHITE);
+        torrent.setJumpStrength(0);
+        torrent.getAttribute(Attribute.SAFE_FALL_DISTANCE).setBaseValue(8);
+        torrent.getAttribute(Attribute.FALL_DAMAGE_MULTIPLIER).setBaseValue(3);
+        torrent.getAttribute(Attribute.MOVEMENT_SPEED).setBaseValue(0.3);
+        torrent.getAttribute(Attribute.MAX_HEALTH).setBaseValue(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue()/2);
+        torrent.getInventory().setSaddle(new ItemStack(Material.SADDLE));
+        torrent.addScoreboardTag(player.getName() + "_torrent");
+        player.addScoreboardTag("onTorrent");
+        torrent.addPassenger(player);
+        BukkitTask horseMount = new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.playSound(player, Sound.ENTITY_HORSE_SADDLE, 100, 1);
+                player.playSound(player, Sound.ENTITY_HORSE_AMBIENT, 100, 1);
+                player.addScoreboardTag("canHorseJump");
+                player.addScoreboardTag("canHorseDismount");
+            }
+        }.runTaskLater(Dsplugin.getInstance(), 5);
+    }
+    public void torrentJump(Player player) {
+        Horse torrent = (Horse) player.getVehicle();
+        Vector pVector = player.getLocation().getDirection();
+        if(player.getScoreboardTags().contains("canDoubleJump")) {
+            player.removeScoreboardTag("canDoubleJump");
+            pVector.setY(0);
+            pVector.normalize();
+            pVector.multiply(0.8);
+            pVector.setY(0.6);
+            torrent.setVelocity(pVector);
+            player.playSound(player, Sound.ENTITY_HORSE_LAND, 0.3F, 1);
+        } else {
+            player.removeScoreboardTag("canHorseDismount");
+            player.removeScoreboardTag("canHorseJump");
+            pVector.setY(0);
+            pVector.normalize();
+            pVector.multiply(0.5);
+            pVector.setY(0.6);
+            torrent.setVelocity(pVector);
+            player.playSound(player, Sound.ENTITY_HORSE_JUMP, 0.3F, 1);
+            player.addScoreboardTag("canDoubleJump");
+            BukkitTask horseLand = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if(torrent.isOnGround()) {
+                        player.addScoreboardTag("canHorseDismount");
+                        player.addScoreboardTag("canHorseJump");
+                        player.removeScoreboardTag("canDoubleJump");
+                        cancel();
+                    }
+                }
+            }.runTaskTimer(Dsplugin.getInstance(), 3,0);
+        }
+    }
     public void uchigatana(Player player) {
         ItemStack sword = new ItemStack(Material.IRON_SWORD);
         ItemMeta swordMeta = sword.getItemMeta();
@@ -183,6 +240,9 @@ public class TriggerEvents implements Listener {
         player.openInventory(graceInventory);
     }
     public void grace(Player player) {
+        if(player.getScoreboardTags().contains("deadTorrent")) {
+            player.removeScoreboardTag("deadTorrent");
+        }
         BukkitTask sitDelay = new BukkitRunnable() {
             @Override
             public void run() {
@@ -314,6 +374,10 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerSwing(PlayerArmSwingEvent event) {
         Player player = event.getPlayer();
+        if(player.getAttackCooldown() != 1) {
+            event.setCancelled(true);
+            return;
+        }
         if(!player.getScoreboardTags().contains("iframe")) {
             if(stats.get(player.getName() + "_stamina") >= 1) {
                 try {
@@ -573,7 +637,7 @@ public class TriggerEvents implements Listener {
         }
     }
     @EventHandler
-    public void onPlayerKill(EntityDeathEvent event) {
+    public void onEntityDeath(EntityDeathEvent event) {
         if(event.getDamageSource().getCausingEntity() instanceof Player) {
             Player player = (Player) event.getDamageSource().getCausingEntity();
             if(player.getScoreboardTags().contains("runesHeld_" + stats.get(player.getName() + "_runesHeld"))) {
@@ -581,6 +645,68 @@ public class TriggerEvents implements Listener {
             }
             stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") + 1000);
             player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+        }
+        if(event.getEntity() instanceof Horse) {
+            if(!event.getEntity().getPassengers().isEmpty()) {
+                for(Entity passenger : event.getEntity().getPassengers()) {
+                    if(passenger instanceof Player) {
+                        Player player = (Player) passenger;
+                        if(event.getEntity().getScoreboardTags().contains(player.getName() + "_torrent")) {
+                            event.getDrops().clear();
+                            player.sendMessage("Torrent died.");
+                            player.addScoreboardTag("deadTorrent");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    @EventHandler
+    public void onHorseDismount(VehicleExitEvent event) {
+        if(event.getExited() instanceof Player) {
+            Player player = (Player) event.getExited();
+            Entity horse = event.getVehicle();
+            if(horse.getScoreboardTags().contains(player.getName() + "_torrent")) {
+                if(player.getScoreboardTags().contains("canHorseDismount")) {
+                    horse.remove();
+                    player.removeScoreboardTag("onTorrent");
+                    player.removeScoreboardTag("canHorseJump");
+                    player.removeScoreboardTag("canHorseDismount");
+                } else {
+                    event.setCancelled(true);
+                }
+            }
+        }
+    }
+    @EventHandler
+    public void onPlayerClick(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if(event.getAction().isRightClick()) {
+            if(player.getScoreboardTags().contains("canHorseJump") || player.getScoreboardTags().contains("canDoubleJump")) {
+                if(event.hasItem()) {
+                    try {
+                        if(event.getItem().getItemMeta().displayName().equals(Component.text("Spectral Steed Whistle", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false))) {
+                            torrentJump(player);
+                        }
+                    } catch (NullPointerException ignore) {
+                    }
+                }
+            } else {
+                if(event.hasItem()) {
+                    try {
+                        if (event.getItem().getItemMeta().displayName().equals(Component.text("Spectral Steed Whistle", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false))) {
+                            if(!player.getScoreboardTags().contains("onTorrent")) {
+                                if(player.getScoreboardTags().contains("deadTorrent")) {
+                                    player.sendMessage("You need to rest at a Site of Grace to revive Torrent.");
+                                } else {
+                                    summonTorrent(player);
+                                }
+                            }
+                        }
+                    } catch (NullPointerException ignore) {
+                    }
+                }
+            }
         }
     }
 }
