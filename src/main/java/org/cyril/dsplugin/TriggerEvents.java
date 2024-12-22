@@ -2,6 +2,7 @@ package org.cyril.dsplugin;
 
 import io.papermc.paper.event.player.PlayerArmSwingEvent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
@@ -14,6 +15,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
@@ -209,6 +211,15 @@ public class TriggerEvents implements Listener {
         Lore.add(Component.text(""));
         Lore.add(Component.text("Runes Held: " + Math.round(stats.get(player.getName() + "_runesHeld")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         Lore.add(Component.text("Runes Needed: " + Math.round(stats.get(player.getName() + "_runesNeeded")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text(""));
+        Lore.add(Component.text("HP: " + ((float) player.getAttribute(Attribute.MAX_HEALTH).getBaseValue()), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("FP: " + stats.get(player.getName() + "_maxFP"), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("Stamina: " + stats.get(player.getName() + "_maxStamina"), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text(""));
+        TextComponent loreHead = Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                .append(Component.keybind("key.drop", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                .append(Component.text(" to share your stats in chat.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC,false));
+        Lore.add(loreHead);
         skullMeta.lore(Lore);
         Lore.clear();
         playerStats.setItemMeta(skullMeta);
@@ -435,6 +446,8 @@ public class TriggerEvents implements Listener {
         stats.put(player.getName() + "_stamina", 0F);
         testInstance.setMaxStamina(player.getName());
         testInstance.staminaRegen(player.getName());
+        player.getAttribute(Attribute.SAFE_FALL_DISTANCE).setBaseValue(8);
+        player.getAttribute(Attribute.FALL_DAMAGE_MULTIPLIER).setBaseValue(6);
         player.sendMessage(stats.entrySet().toString());
     }
     @EventHandler
@@ -624,7 +637,10 @@ public class TriggerEvents implements Listener {
                     }
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Your Stats", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC,false))) {
-                    player.sendMessage(event.getCurrentItem().displayName());
+                    if(event.getClick().equals(ClickType.DROP)) {
+                        Bukkit.broadcast(Component.text("<" + player.getName() + "> ")
+                                .append(event.getCurrentItem().displayName()));
+                    }
                 }
                 grace(player);
             } catch (NullPointerException ignore) {
@@ -665,6 +681,16 @@ public class TriggerEvents implements Listener {
                     }
                 }
             }
+        }
+        if(event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            if(player.getScoreboardTags().contains("runesHeld_" + stats.get(player.getName() + "_runesHeld"))) {
+                player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+            }
+            float runesAfterDeath = Math.round(stats.get(player.getName() + "_runesHeld") / 2);
+            stats.put(player.getName() + "_runesHeld", runesAfterDeath);
+            player.addScoreboardTag("runesHeld_" + runesAfterDeath);
+            player.sendMessage("Runes after death: " + runesAfterDeath);
         }
     }
     @EventHandler

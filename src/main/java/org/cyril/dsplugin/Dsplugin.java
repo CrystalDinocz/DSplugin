@@ -1,6 +1,8 @@
 package org.cyril.dsplugin;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
+import org.bukkit.World;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,6 +29,9 @@ public final class Dsplugin extends JavaPlugin {
         Grace.graceParticles();
         for(Player player : Bukkit.getOnlinePlayers()) {
             player.kick();
+        }
+        for(World world : Bukkit.getWorlds()) {
+            world.setGameRule(GameRule.KEEP_INVENTORY, true);
         }
     }
     public static Dsplugin getInstance() {
