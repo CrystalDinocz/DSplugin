@@ -1,11 +1,11 @@
 package org.cyril.dsplugin;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.KeybindComponent;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -24,6 +24,7 @@ public class TorrentWhistle extends Command {
     public boolean execute(@NotNull CommandSender commandSender, @NotNull String s, @NotNull String[] strings) {
         if(commandSender instanceof Player) {
             Player player = (Player) commandSender;
+            player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
             ItemStack whistle = new ItemStack(Material.HONEYCOMB);
             ItemMeta whistleMeta = whistle.getItemMeta();
             List<Component> Lore = new ArrayList<>();

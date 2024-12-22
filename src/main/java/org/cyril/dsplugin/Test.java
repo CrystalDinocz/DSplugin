@@ -1,6 +1,7 @@
 package org.cyril.dsplugin;
 
 import org.bukkit.Bukkit;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -87,6 +88,29 @@ public class Test {
             int maxFP = (int) (200 + (150 * (1 - Math.pow(1 - ((stats.get(name + "_mind") - 35) / 25), 1.2))));
             stats.put(name + "_maxFP", (float) maxFP);
         }
+    }
+    public void setMaxHP(String name) {
+        HashMap<String, Float> stats = dsInstance.getStats();
+        Player player = Bukkit.getPlayer(name);
+        if(stats.get(name + "_vigor") <= 25) {
+            int scaledHealth = (int) (300 + (500 * Math.pow((stats.get(name + "_vigor") - 1) / 24, 1.5)));
+            double maxHealth = (double) scaledHealth / 15;
+            player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(maxHealth);
+            player.setHealth(maxHealth);
+        }
+        if(stats.get(name + "_vigor") >= 26 && stats.get(name + "_vigor") <= 40) {
+            int scaledHealth = (int) (800 + (650 * Math.pow((stats.get(name + "_vigor") - 25) / 15, 1.1)));
+            double maxHealth = (double) scaledHealth / 15;
+            player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(maxHealth);
+            player.setHealth(maxHealth);
+        }
+        if(stats.get(name + "_vigor") >= 41 && stats.get(name + "_vigor") <= 50) {
+            int scaledHealth = (int) (1450 + (450 * (1 - (Math.pow(1 - ((stats.get(name + "_vigor") - 40) / 20), 1.2)))));
+            double maxHealth = (double) scaledHealth / 15;
+            player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(maxHealth);
+            player.setHealth(maxHealth);
+        }
+        player.sendMessage(String.valueOf(player.getHealth()));
     }
     public void setRunesNeeded(String name) {
         HashMap<String, Float> stats = dsInstance.getStats();

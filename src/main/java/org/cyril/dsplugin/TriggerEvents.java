@@ -12,6 +12,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
@@ -243,6 +245,9 @@ public class TriggerEvents implements Listener {
         if(player.getScoreboardTags().contains("deadTorrent")) {
             player.removeScoreboardTag("deadTorrent");
         }
+        player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
+        stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
+        testInstance.showFP(player.getName());
         BukkitTask sitDelay = new BukkitRunnable() {
             @Override
             public void run() {
@@ -422,6 +427,8 @@ public class TriggerEvents implements Listener {
             player.getScoreboardTags().clear();
         }
         storeValues(player);
+        testInstance.setMaxHP(player.getName());
+        player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
         testInstance.setMaxFP(player.getName());
         stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
         testInstance.showFP(player.getName());
@@ -454,8 +461,6 @@ public class TriggerEvents implements Listener {
             for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
                 entity.remove();
             }
-            stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
-            testInstance.showFP(player.getName());
         }
 
     }
@@ -486,6 +491,7 @@ public class TriggerEvents implements Listener {
                             player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            testInstance.setMaxHP(player.getName());
                         } else {
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
@@ -643,7 +649,7 @@ public class TriggerEvents implements Listener {
             if(player.getScoreboardTags().contains("runesHeld_" + stats.get(player.getName() + "_runesHeld"))) {
                 player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
             }
-            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") + 1000);
+            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") + 1000000000);
             player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
         }
         if(event.getEntity() instanceof Horse) {
@@ -707,6 +713,22 @@ public class TriggerEvents implements Listener {
                     }
                 }
             }
+        }
+    }
+    @EventHandler
+    public void onPlayerRegen(EntityRegainHealthEvent event) {
+        if(event.getEntity() instanceof Player) {
+            if(event.getRegainReason().equals(EntityRegainHealthEvent.RegainReason.SATIATED)) {
+                event.setCancelled(true);
+            }
+        }
+    }
+    @EventHandler
+    public void onHungerChange(FoodLevelChangeEvent event) {
+        if(event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            event.setCancelled(true);
+            player.setFoodLevel(20);
         }
     }
 }
