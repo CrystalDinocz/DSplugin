@@ -388,45 +388,46 @@ public class TriggerEvents implements Listener {
         }
     }
     @EventHandler
-    public void onPlayerSwing(PlayerArmSwingEvent event) {
-        Player player = event.getPlayer();
-        if(player.getAttackCooldown() != 1) {
-            event.setCancelled(true);
-            return;
-        }
-        if(!player.getScoreboardTags().contains("iframe")) {
-            if(stats.get(player.getName() + "_stamina") >= 1) {
-                try {
-                    if (player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Straight Sword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
-                        stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
-                    }
-                    if (player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Greatsword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
-                        stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
-                    }
-                    if (player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
-                        stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
-                    }
-                    if (player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Axe", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
-                        stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
-                    }
-                    if (player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Hammer", NamedTextColor.DARK_GRAY))) {
-                        stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
-                    }
-                    testInstance.setMaxStamina(player.getName());
-                    testInstance.staminaRegen(player.getName());
-                } catch (NullPointerException ignore) {
-                }
-            }
-        }
-    }
-    @EventHandler
     public void onEntityHurt(EntityDamageEvent event) {
         try {
             if (event.getEntity().getScoreboardTags().contains("iframe")) {
                 event.setCancelled(true);
             }
-            if (event.getDamageSource().getCausingEntity().getScoreboardTags().contains("iframe")) {
-                event.setCancelled(true);
+            if(event.getDamageSource().getCausingEntity() instanceof Player) {
+                Player player = (Player) event.getDamageSource().getCausingEntity();
+                if(player.getAttackCooldown() != 1) {
+                    event.setCancelled(true);
+                    return;
+                }
+                if(stats.get(player.getName() + "_stamina") <= 0) {
+                    event.setCancelled(true);
+                    player.sendMessage("Not enough stamina.");
+                    return;
+                }
+                if(!player.getScoreboardTags().contains("iframe")) {
+                    if(stats.get(player.getName() + "_stamina") >= 1) {
+                        try {
+                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Straight Sword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
+                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
+                            }
+                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Greatsword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
+                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
+                            }
+                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
+                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
+                            }
+                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Axe", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
+                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
+                            }
+                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Hammer", NamedTextColor.DARK_GRAY))) {
+                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
+                            }
+                            testInstance.setMaxStamina(player.getName());
+                            testInstance.staminaRegen(player.getName());
+                        } catch (NullPointerException ignore) {
+                        }
+                    }
+                }
             }
         } catch(NullPointerException ignore) {
         }
@@ -449,6 +450,8 @@ public class TriggerEvents implements Listener {
         player.getAttribute(Attribute.SAFE_FALL_DISTANCE).setBaseValue(8);
         player.getAttribute(Attribute.FALL_DAMAGE_MULTIPLIER).setBaseValue(6);
         player.sendMessage(stats.entrySet().toString());
+        player.setExperienceLevelAndProgress(0);
+        player.setLevel(stats.get(player.getName() + "_level").intValue());
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {
@@ -470,6 +473,7 @@ public class TriggerEvents implements Listener {
         graceMeta.displayName(Component.text("Level Up", NamedTextColor.YELLOW, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck.setItemMeta(graceMeta);
         if(event.getInventory().contains(graceCheck)) {
+            player.setLevel(stats.get(player.getName() + "_level").intValue());
             String selector = String.format("@e[tag=%s_sit]", event.getPlayer().getName());
             for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
                 entity.remove();
@@ -756,5 +760,9 @@ public class TriggerEvents implements Listener {
             event.setCancelled(true);
             player.setFoodLevel(20);
         }
+    }
+    @EventHandler
+    public void onExpChange(PlayerExpChangeEvent event) {
+        event.setAmount(0);
     }
 }
