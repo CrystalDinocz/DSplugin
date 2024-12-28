@@ -1,10 +1,10 @@
 package org.cyril.dsplugin;
 
-import io.papermc.paper.event.player.PlayerArmSwingEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -24,6 +24,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -114,7 +115,64 @@ public class TriggerEvents implements Listener {
         sword.setItemMeta(swordMeta);
         player.getInventory().setItem(player.getInventory().firstEmpty(), sword);
     }
-    public void graceMenu(Player player) {
+    public void mainMenu(Player player) {
+        Inventory graceInventory = Bukkit.createInventory(null, 9, Component.text("Site of Grace", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        ItemStack graceItem1 = new ItemStack(Material.ENDER_PEARL);
+        ItemMeta graceMeta1 = graceItem1.getItemMeta();
+        graceMeta1.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC,false));
+        graceItem1.setItemMeta(graceMeta1);
+        ItemStack graceItem2 = new ItemStack(Material.GOLD_NUGGET);
+        ItemMeta graceMeta2 = graceItem1.getItemMeta();
+        graceMeta2.displayName(Component.text("Level Up", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC,false));
+        graceItem2.setItemMeta(graceMeta2);
+        ItemStack graceItem3 = new ItemStack(Material.POTION);
+        PotionMeta graceMeta3 = ((PotionMeta) graceItem3.getItemMeta());
+        graceMeta3.setColor(Color.RED);
+        graceMeta3.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+        graceMeta3.displayName(Component.text("Flasks", NamedTextColor.RED).decoration(TextDecoration.ITALIC,false));
+        graceItem3.setItemMeta(graceMeta3);
+        graceInventory.setItem(2, graceItem1);
+        graceInventory.setItem(4, graceItem2);
+        graceInventory.setItem(6, graceItem3);
+        player.openInventory(graceInventory);
+    }
+    public void travelMenu(Player player) {
+        int itemSlot = 0;
+        List<Entity> graceSites = Bukkit.selectEntities(Bukkit.getConsoleSender(), "@e[tag=grace]");
+        Inventory travelInventory = Bukkit.createInventory(null, 27, Component.text("Travel", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false));
+        for(int topSlot = 0; topSlot <= 8; topSlot++) {
+            if(topSlot == 4) {
+                ItemStack graceItem = new ItemStack(Material.ENDER_PEARL);
+                ItemMeta graceMeta = graceItem.getItemMeta();
+                graceMeta.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+                graceItem.setItemMeta(graceMeta);
+                travelInventory.setItem(topSlot, graceItem);
+            } else {
+                ItemStack dummyItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+                ItemMeta dummyMeta = dummyItem.getItemMeta();
+                dummyMeta.displayName(Component.text(""));
+                dummyItem.setItemMeta(dummyMeta);
+                travelInventory.setItem(topSlot, dummyItem);
+            }
+        }
+        if(!graceSites.isEmpty()) {
+            for(Entity grace : graceSites) {
+                List<Component> Lore = new ArrayList<>();
+                ItemStack graceItem = new ItemStack(Material.GOLD_NUGGET);
+                ItemMeta graceMeta = graceItem.getItemMeta();
+                graceMeta.displayName(Component.text(grace.getName(), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                        .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                        .append(Component.text(" to travel to this Site of Grace.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+                graceMeta.lore(Lore);
+                graceItem.setItemMeta(graceMeta);
+                travelInventory.setItem(itemSlot + 9, graceItem);
+                itemSlot++;
+            }
+        }
+        player.openInventory(travelInventory);
+    }
+    public void levelMenu(Player player) {
         List<Component> Lore = new ArrayList<>();
         AttributeModifier dummyAttribute = new AttributeModifier(new NamespacedKey(Dsplugin.getInstance(), "dummy"), 0, AttributeModifier.Operation.ADD_NUMBER);
         Inventory graceInventory = Bukkit.createInventory(null, 27, Component.text("Menu", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
@@ -271,7 +329,18 @@ public class TriggerEvents implements Listener {
                 graceSit.addPassenger(player);
             }
         }.runTaskLater(Dsplugin.getInstance(), 0);
-        graceMenu(player);
+    }
+    public void graceTravel(Player player, InventoryClickEvent event) {
+        ItemStack graceItem = event.getCurrentItem();
+        PlainTextComponentSerializer plainText  = PlainTextComponentSerializer.plainText();
+        String graceName = plainText.serialize(graceItem.getItemMeta().displayName());
+        player.sendMessage(graceName);
+        String selector = String.format("@e[tag=grace,name=\"%s\"]", graceName);
+        Entity grace = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector).getFirst();
+        Location graceLocation = grace.getLocation();
+        graceLocation.add(graceLocation.getDirection().setY(0).normalize().multiply(-1.5));
+        player.playSound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 1,0);
+        player.teleport(graceLocation);
     }
     public void storeValues(Player player) {
         for(String tag : player.getScoreboardTags()) {
@@ -462,6 +531,7 @@ public class TriggerEvents implements Listener {
             } else if (event.getRightClicked().getScoreboardTags().contains("grace")) {
                 baseLocation.put(player.getName(), player.getLocation());
                 grace(player);
+                mainMenu(player);
             }
         }
     }
@@ -472,7 +542,15 @@ public class TriggerEvents implements Listener {
         ItemMeta graceMeta = graceCheck.getItemMeta();
         graceMeta.displayName(Component.text("Level Up", NamedTextColor.YELLOW, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck.setItemMeta(graceMeta);
-        if(event.getInventory().contains(graceCheck)) {
+        ItemStack graceCheck2 = new ItemStack(Material.ENDER_PEARL);
+        ItemMeta graceMeta2 = graceCheck2.getItemMeta();
+        graceMeta2.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false));
+        graceCheck2.setItemMeta(graceMeta2);
+        ItemStack graceCheck3 = new ItemStack(Material.ENDER_PEARL);
+        ItemMeta graceMeta3 = graceCheck3.getItemMeta();
+        graceMeta3.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        graceCheck3.setItemMeta(graceMeta3);
+        if(event.getInventory().contains(graceCheck) || event.getInventory().contains(graceCheck2) || event.getInventory().contains(graceCheck3)) {
             player.setLevel(stats.get(player.getName() + "_level").intValue());
             String selector = String.format("@e[tag=%s_sit]", event.getPlayer().getName());
             for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
@@ -483,11 +561,47 @@ public class TriggerEvents implements Listener {
     }
     @EventHandler
     public void onInventoryInteract(InventoryClickEvent event) {
+        Player player = (Player) event.getWhoClicked();
         ItemStack graceCheck = new ItemStack(Material.GOLD_NUGGET);
         ItemMeta graceMeta = graceCheck.getItemMeta();
-        Player player = (Player) event.getWhoClicked();
         graceMeta.displayName(Component.text("Level Up", NamedTextColor.YELLOW, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck.setItemMeta(graceMeta);
+        ItemStack graceCheck2 = new ItemStack(Material.ENDER_PEARL);
+        ItemMeta graceMeta2 = graceCheck2.getItemMeta();
+        graceMeta2.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false));
+        graceCheck2.setItemMeta(graceMeta2);
+        ItemStack graceCheck3 = new ItemStack(Material.ENDER_PEARL);
+        ItemMeta graceMeta3 = graceCheck3.getItemMeta();
+        graceMeta3.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        graceCheck3.setItemMeta(graceMeta3);
+        if(event.getInventory().contains(graceCheck3)) {
+            event.setCancelled(true);
+            try {
+                if(event.getCurrentItem().getType().equals(Material.GOLD_NUGGET)) {
+                    if(event.isLeftClick()) {
+                        graceTravel(player, event);
+                    }
+                }
+            } catch(NullPointerException ignore) {
+            }
+        }
+        if(event.getInventory().contains(graceCheck2)) {
+            event.setCancelled(true);
+            try {
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Travel", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false))) {
+                    grace(player);
+                    travelMenu(player);
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Level Up", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false))) {
+                    grace(player);
+                    levelMenu(player);
+                }
+                if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Flasks", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false))) {
+                    player.sendMessage("Flasks");
+                }
+            } catch (NullPointerException ignore) {
+            }
+        }
         if(event.getInventory().contains(graceCheck)) {
             event.setCancelled(true);
             try {
@@ -647,6 +761,7 @@ public class TriggerEvents implements Listener {
                     }
                 }
                 grace(player);
+                levelMenu(player);
             } catch (NullPointerException ignore) {
             }
         }
