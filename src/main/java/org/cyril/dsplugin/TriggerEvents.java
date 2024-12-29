@@ -5,6 +5,7 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -30,6 +31,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.time.Duration;
 import java.util.*;
 
 public class TriggerEvents implements Listener {
@@ -37,6 +39,7 @@ public class TriggerEvents implements Listener {
     Test testInstance = new Test(dsInstance);
     HashMap<String, Float> stats = dsInstance.getStats();
     HashMap<String, Location> baseLocation = new HashMap<String, Location>();
+    HashMap<String, String> gracesDiscovered = new HashMap<String, String>();
     int duration = 0;
     public void summonTorrent(Player player) {
         Location pLocation = player.getLocation();
@@ -157,17 +160,20 @@ public class TriggerEvents implements Listener {
         }
         if(!graceSites.isEmpty()) {
             for(Entity grace : graceSites) {
-                List<Component> Lore = new ArrayList<>();
-                ItemStack graceItem = new ItemStack(Material.GOLD_NUGGET);
-                ItemMeta graceMeta = graceItem.getItemMeta();
-                graceMeta.displayName(Component.text(grace.getName(), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
-                Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
-                        .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
-                        .append(Component.text(" to travel to this Site of Grace.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
-                graceMeta.lore(Lore);
-                graceItem.setItemMeta(graceMeta);
-                travelInventory.setItem(itemSlot + 9, graceItem);
-                itemSlot++;
+                String[] stringList = grace.getName().split(" ");
+                if(player.getScoreboardTags().contains("discovered_" + String.join("_", stringList))) {
+                    List<Component> Lore = new ArrayList<>();
+                    ItemStack graceItem = new ItemStack(Material.GOLD_NUGGET);
+                    ItemMeta graceMeta = graceItem.getItemMeta();
+                    graceMeta.displayName(Component.text(grace.getName(), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                    Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                            .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                            .append(Component.text(" to travel to this Site of Grace.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+                    graceMeta.lore(Lore);
+                    graceItem.setItemMeta(graceMeta);
+                    travelInventory.setItem(itemSlot + 9, graceItem);
+                    itemSlot++;
+                }
             }
         }
         player.openInventory(travelInventory);
@@ -342,6 +348,12 @@ public class TriggerEvents implements Listener {
         player.playSound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 1,0);
         player.teleport(graceLocation);
     }
+    public void graceDiscovered(Player player) {
+        Title.Times times = Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(2), Duration.ofMillis(700));
+        Title title = Title.title(Component.text("LOST GRACE DISCOVERED", NamedTextColor.GOLD, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false), Component.empty(), times);
+        player.showTitle(title);
+        player.playSound(player, Sound.BLOCK_END_PORTAL_SPAWN, 1F, 0.4F);
+    }
     public void storeValues(Player player) {
         for(String tag : player.getScoreboardTags()) {
             if(tag.contains("rollCount_")) {
@@ -384,6 +396,9 @@ public class TriggerEvents implements Listener {
                 Float lastValue = Float.valueOf(tag.replace("level_", ""));
                 stats.put(player.getName() + "_level", lastValue);
             }
+            if(tag.contains("discovered_")) {
+                gracesDiscovered.put(tag, player.getName());
+            }
 
         }
         stats.putIfAbsent(player.getName() + "_rollCount", 1F);
@@ -407,6 +422,11 @@ public class TriggerEvents implements Listener {
         player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
         player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
         player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
+        for(String string : gracesDiscovered.keySet()) {
+            if(gracesDiscovered.get(string).equals(player.getName())) {
+                player.addScoreboardTag(string);
+            }
+        }
     }
     @EventHandler
     public void onShift(PlayerToggleSneakEvent event) {
@@ -529,9 +549,19 @@ public class TriggerEvents implements Listener {
             if(event.getRightClicked().getScoreboardTags().contains("uchigatana")) {
                 uchigatana(player);
             } else if (event.getRightClicked().getScoreboardTags().contains("grace")) {
-                baseLocation.put(player.getName(), player.getLocation());
-                grace(player);
-                mainMenu(player);
+                Entity grace = event.getRightClicked();
+                Location graceLocation = grace.getLocation();
+                graceLocation.add(graceLocation.getDirection().setY(0).normalize().multiply(-1.5));
+                player.setRespawnLocation(graceLocation, true);
+                String[] stringList = grace.getName().split(" ");
+                if(!player.getScoreboardTags().contains("discovered_" + String.join("_", stringList))) {
+                    graceDiscovered(player);
+                    player.addScoreboardTag("discovered_" + String.join("_", stringList));
+                } else {
+                    baseLocation.put(player.getName(), player.getLocation());
+                    grace(player);
+                    mainMenu(player);
+                }
             }
         }
     }
