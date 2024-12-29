@@ -1,5 +1,6 @@
 package org.cyril.dsplugin;
 
+import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -27,6 +28,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -100,6 +103,56 @@ public class TriggerEvents implements Listener {
                     }
                 }
             }.runTaskTimer(Dsplugin.getInstance(), 3,0);
+        }
+    }
+    public void potionDrink(Player player, String potion) {
+        if(!player.getScoreboardTags().contains("drinking")) {
+            final int[] timer = {0};
+            Location location = player.getLocation();
+            BukkitRunnable drinking = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if(timer[0] < 30) {
+                        if (timer[0] % 6 == 0) {
+                            player.playSound(player, Sound.ENTITY_GENERIC_DRINK, 1, 1);
+                        }
+                        timer[0]++;
+                    } else {
+                        player.playSound(player, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1, 2);
+                        player.removeScoreboardTag("drinking");
+                        if(potion.equals("crimson")) {
+                            double currHP = player.getHealth();
+                            double maxHP = player.getAttribute(Attribute.MAX_HEALTH).getBaseValue();
+                            double flaskHP = (double) 250 / 15;
+                            if(maxHP - currHP > flaskHP) {
+                                player.setHealth(currHP + flaskHP);
+                                player.sendMessage("Healed " + flaskHP);
+                            } else {
+                                player.setHealth(maxHP);
+                                player.sendMessage("Healed " + (maxHP - currHP));
+                            }
+                        }
+                        if(potion.equals("cerulean")) {
+                            float currFP = stats.get(player.getName() + "_FP");
+                            float maxFP = stats.get(player.getName() + "_maxFP");
+                            int flaskFP = 80;
+                            if(maxFP - currFP > flaskFP) {
+                                stats.put(player.getName() + "_FP", currFP + flaskFP);
+                                player.sendMessage("Restored " + flaskFP);
+                            } else {
+                                stats.put(player.getName() + "_FP", maxFP);
+                                player.sendMessage("Restored " + (maxFP - currFP));
+                            }
+                            testInstance.showFP(player.getName());
+                        }
+                        cancel();
+                    }
+                }
+            };
+            player.addScoreboardTag("drinking");
+            PotionEffect effect = new PotionEffect(PotionEffectType.SLOWNESS, 30, 4, true, true, false);
+            player.addPotionEffect(effect);
+            drinking.runTaskTimer(Dsplugin.getInstance(), 0, 0);
         }
     }
     public void uchigatana(Player player) {
@@ -461,16 +514,18 @@ public class TriggerEvents implements Listener {
                 }
             };
             if(!player.getScoreboardTags().contains("recovery")) {
-                if (player.getLocation().subtract(0, 0.3, 0).getBlock().isSolid()) {
-                    if (stats.get(player.getName() + "_stamina") >= 1) {
-                        stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
-                        testInstance.setMaxStamina(player.getName());
-                        testInstance.staminaRegen(player.getName());
-                        player.addScoreboardTag("recovery");
-                        player.addScoreboardTag("iframe");
-                        RollFrames.runTaskTimer(Dsplugin.getInstance(), 0, 1);
-                    } else {
-                        player.sendMessage("Not enough stamina.");
+                if(!player.getScoreboardTags().contains("drinking")) {
+                    if(player.getLocation().subtract(0, 0.3, 0).getBlock().isSolid()) {
+                        if (stats.get(player.getName() + "_stamina") >= 1) {
+                            stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
+                            testInstance.setMaxStamina(player.getName());
+                            testInstance.staminaRegen(player.getName());
+                            player.addScoreboardTag("recovery");
+                            player.addScoreboardTag("iframe");
+                            RollFrames.runTaskTimer(Dsplugin.getInstance(), 0, 1);
+                        } else {
+                            player.sendMessage("Not enough stamina.");
+                        }
                     }
                 }
             }
@@ -863,6 +918,19 @@ public class TriggerEvents implements Listener {
     public void onPlayerClick(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         if(event.getAction().isRightClick()) {
+            if(event.hasItem()) {
+                try {
+                    if (event.getItem().getItemMeta().displayName().equals(Component.text("Flask of Crimson Tears", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false))) {
+                        potionDrink(player, "crimson");
+                        event.setCancelled(true);
+                    }
+                    if (event.getItem().getItemMeta().displayName().equals(Component.text("Flask of Cerulean Tears", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC, false))) {
+                        potionDrink(player, "cerulean");
+                        event.setCancelled(true);
+                    }
+                } catch (NullPointerException ignore) {
+                }
+            }
             if(player.getScoreboardTags().contains("canHorseJump") || player.getScoreboardTags().contains("canDoubleJump")) {
                 if(event.hasItem()) {
                     try {
@@ -875,7 +943,7 @@ public class TriggerEvents implements Listener {
             } else {
                 if(event.hasItem()) {
                     try {
-                        if (event.getItem().getItemMeta().displayName().equals(Component.text("Spectral Steed Whistle", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false))) {
+                        if(event.getItem().getItemMeta().displayName().equals(Component.text("Spectral Steed Whistle", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false))) {
                             if(!player.getScoreboardTags().contains("onTorrent")) {
                                 if(player.getScoreboardTags().contains("deadTorrent")) {
                                     player.sendMessage("You need to rest at a Site of Grace to revive Torrent.");
@@ -909,5 +977,24 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onExpChange(PlayerExpChangeEvent event) {
         event.setAmount(0);
+    }
+    @EventHandler
+    public void onPlayerDrink(PlayerItemConsumeEvent event) {
+        if(event.getItem().getType().equals(Material.POTION)) {
+            event.setCancelled(true);
+        }
+    }
+    @EventHandler
+    public void onPlayerChangeSlot(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        if(player.getScoreboardTags().contains("drinking")) {
+            event.setCancelled(true);
+        }
+    }
+    @EventHandler
+    public void onPlayerJump(PlayerJumpEvent event) {
+        if(event.getPlayer().getScoreboardTags().contains("drinking")) {
+            event.setCancelled(true);
+        }
     }
 }

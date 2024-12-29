@@ -56,22 +56,17 @@ public class Test {
     }
     public void setMaxStamina(String name) {
         HashMap<String, Float> stats = dsInstance.getStats();
-        float maxStamina = 100;
-        for(float a = 1; a <= stats.get(name + "_endurance"); a = a + 1) {
-            if(a != 1.0) {
-                if(a <= 30.0) {
-                    if(a % 2 == 0) {
-                        maxStamina = maxStamina + 2;
-                    } else {
-                        maxStamina = maxStamina + 1;
-                    }
-                } else {
-                    maxStamina = maxStamina + 1;
-                }
-            }
-            if(a == stats.get(name + "_endurance")) {
-                stats.put(name + "_maxStamina", maxStamina);
-            }
+        if(stats.get(name + "_endurance") <= 15) {
+            int maxStamina = (int) (80 + (25 * ((stats.get(name + "_endurance") - 1) / 14)));
+            stats.put(name + "_maxStamina", (float) maxStamina);
+        }
+        if(stats.get(name + "_endurance") >= 16 && stats.get(name + "_endurance") <= 35) {
+            int maxStamina = (int) (105 + (25 * ((stats.get(name + "_endurance") - 15) / 15)));
+            stats.put(name + "_maxStamina", (float) maxStamina);
+        }
+        if(stats.get(name + "_endurance") >= 36) {
+            int maxStamina = (int) (130 + (25 * ((stats.get(name + "_endurance") - 30) / 20)));
+            stats.put(name + "_maxStamina", (float) maxStamina);
         }
     }
     public void setMaxFP(String name) {
