@@ -29,6 +29,13 @@ public class Grace {
                         }
                     }
                 }
+                List<Entity> riposteIndicators = Bukkit.selectEntities(Bukkit.getConsoleSender(), "@e[tag=stanceBroken]");
+                for(Entity entity : riposteIndicators) {
+                    Particle.DustOptions dust1 = new Particle.DustOptions(Color.fromRGB(255,241,42), 1F);
+                    entity.getWorld().spawnParticle(Particle.DUST, entity.getLocation().add(0,0.5,0), 2, dust1);
+                    Particle.DustOptions dust2 = new Particle.DustOptions(Color.fromRGB(255,255,255), 0.5F);
+                    entity.getWorld().spawnParticle(Particle.DUST, entity.getLocation().add(0,0.5,0), 4, dust2);
+                }
             }
         };
         particleRepeat.runTaskTimer(Dsplugin.getInstance(), 0,0);

@@ -43,6 +43,7 @@ public class TriggerEvents implements Listener {
     HashMap<String, Float> stats = dsInstance.getStats();
     HashMap<String, Location> baseLocation = new HashMap<String, Location>();
     HashMap<String, String> gracesDiscovered = new HashMap<String, String>();
+    HashMap<String, Integer> taskID = new HashMap<String, Integer>();
     int duration = 0;
     public void summonTorrent(Player player) {
         Location pLocation = player.getLocation();
@@ -153,6 +154,7 @@ public class TriggerEvents implements Listener {
             PotionEffect effect = new PotionEffect(PotionEffectType.SLOWNESS, 30, 4, true, true, false);
             player.addPotionEffect(effect);
             drinking.runTaskTimer(Dsplugin.getInstance(), 0, 0);
+            taskID.put(player.getName() + "_lastTask", drinking.getTaskId());
         }
     }
     public void uchigatana(Player player) {
@@ -380,7 +382,7 @@ public class TriggerEvents implements Listener {
             @Override
             public void run() {
                 Location sitLocation = baseLocation.get(player.getName()).clone();
-                sitLocation.subtract(0,1.6,0);
+                sitLocation.subtract(0,1.9,0);
                 Entity graceSit = player.getWorld().spawnEntity(sitLocation, EntityType.ARMOR_STAND);
                 graceSit.addScoreboardTag(player.getName() + "_sit");
                 graceSit.setGravity(false);
@@ -484,6 +486,10 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onShift(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
+        if(player.getScoreboardTags().contains("dying")) {
+            event.setCancelled(true);
+            return;
+        }
         if(event.isSneaking()) {
             BukkitRunnable Recovery = new BukkitRunnable() {
                 @Override
@@ -534,11 +540,21 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onEntityHurt(EntityDamageEvent event) {
         try {
-            if (event.getEntity().getScoreboardTags().contains("iframe")) {
+            if(event.getEntity().getScoreboardTags().contains("iframe") || event.getEntity().getScoreboardTags().contains("dying")) {
                 event.setCancelled(true);
             }
             if(event.getDamageSource().getCausingEntity() instanceof Player) {
                 Player player = (Player) event.getDamageSource().getCausingEntity();
+                if(player.getScoreboardTags().contains("dying")) {
+                    event.setCancelled(true);
+                    return;
+                }
+                if(event.getEntity().getScoreboardTags().contains("stanceBroken")) {
+                    if(event.getEntity().getNearbyEntities(0.4,0.5,0.4).contains(player)) {
+                        player.sendMessage("stab");
+                    }
+                    return;
+                }
                 if(player.getAttackCooldown() != 1) {
                     event.setCancelled(true);
                     return;
@@ -573,6 +589,15 @@ public class TriggerEvents implements Listener {
                     }
                 }
             }
+            if(event.getEntity() instanceof Player) {
+                Player player = ((Player) event.getEntity()).getPlayer();
+                if(player.getScoreboardTags().contains("drinking")) {
+                    Bukkit.getScheduler().cancelTask(taskID.get(player.getName() + "_lastTask"));
+                    player.removeScoreboardTag("drinking");
+                    player.removePotionEffect(PotionEffectType.SLOWNESS);
+                    player.sendMessage("Healing interrupted.");
+                }
+            }
         } catch(NullPointerException ignore) {
         }
     }
@@ -600,6 +625,10 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {
         Player player = event.getPlayer();
+        if(player.getScoreboardTags().contains("dying")) {
+            event.setCancelled(true);
+            return;
+        }
         if(event.getRightClicked().getType() == EntityType.ARMOR_STAND) {
             if(event.getRightClicked().getScoreboardTags().contains("uchigatana")) {
                 uchigatana(player);
@@ -854,6 +883,10 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerFish(PlayerFishEvent event) {
         Player player = event.getPlayer();
+        if(player.getScoreboardTags().contains("dying")) {
+            event.setCancelled(true);
+            return;
+        }
         if(stats.get(player.getName() + "_FP") >= 12) {
             stats.put(player.getName() + "_FP", stats.get(player.getName() + "_FP") - 12);
             player.sendMessage("Current FP: " + stats.get(player.getName() + "_FP"));
@@ -888,6 +921,53 @@ public class TriggerEvents implements Listener {
         }
         if(event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
+            //Death Screen
+            event.setCancelled(true);
+            player.setHealth(0.005);
+            player.addScoreboardTag("dying");
+            player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1, 0);
+            Location deathLocation = player.getLocation();
+            deathLocation.subtract(0,2,0);
+            Entity graceSit = player.getWorld().spawnEntity(deathLocation, EntityType.ARMOR_STAND);
+            graceSit.addScoreboardTag(player.getName() + "_death");
+            graceSit.setGravity(false);
+            graceSit.setInvisible(true);
+            graceSit.addPassenger(player);
+            BukkitTask dying = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    player.playSound(player, Sound.ENTITY_WITHER_HURT, 1F, 0.5F);
+                    Title.Times time = Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(1), Duration.ofSeconds(1));
+                    Title title = Title.title(Component.text("YOU DIED", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false), Component.empty(), time);
+                    player.showTitle(title);
+                    BukkitTask delayedSound = new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            player.playSound(player, Sound.ENTITY_GLOW_SQUID_SQUIRT, 1, 0);
+                        }
+                    }.runTaskLater(Dsplugin.getInstance(), 20);
+                }
+            }.runTaskLater(Dsplugin.getInstance(), 40);
+            BukkitTask respawn = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    String selector = String.format("@e[tag=%s_death]", player.getName());
+                    List<Entity> deathSeats = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                    for(Entity entity : deathSeats) {
+                        entity.remove();
+                    }
+                    player.removeScoreboardTag("dying");
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 50,255, false, false, false));
+                    player.teleport(player.getRespawnLocation());
+                    player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
+                    stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
+                    testInstance.showFP(player.getName());
+                    if(player.getScoreboardTags().contains("deadTorrent")) {
+                        player.removeScoreboardTag("deadTorrent");
+                    }
+                }
+            }.runTaskLater(Dsplugin.getInstance(), 115);
+            //Rune Loss
             if(player.getScoreboardTags().contains("runesHeld_" + stats.get(player.getName() + "_runesHeld"))) {
                 player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
             }
@@ -898,7 +978,7 @@ public class TriggerEvents implements Listener {
         }
     }
     @EventHandler
-    public void onHorseDismount(VehicleExitEvent event) {
+    public void onVehicleExit(VehicleExitEvent event) {
         if(event.getExited() instanceof Player) {
             Player player = (Player) event.getExited();
             Entity horse = event.getVehicle();
@@ -917,6 +997,10 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerClick(PlayerInteractEvent event) {
         Player player = event.getPlayer();
+        if(player.getScoreboardTags().contains("dying")) {
+            event.setCancelled(true);
+            return;
+        }
         if(event.getAction().isRightClick()) {
             if(event.hasItem()) {
                 try {
@@ -987,12 +1071,20 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerChangeSlot(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
+        if(player.getScoreboardTags().contains("dying")) {
+            event.setCancelled(true);
+            return;
+        }
         if(player.getScoreboardTags().contains("drinking")) {
             event.setCancelled(true);
         }
     }
     @EventHandler
     public void onPlayerJump(PlayerJumpEvent event) {
+        if(event.getPlayer().getScoreboardTags().contains("dying")) {
+            event.setCancelled(true);
+            return;
+        }
         if(event.getPlayer().getScoreboardTags().contains("drinking")) {
             event.setCancelled(true);
         }
