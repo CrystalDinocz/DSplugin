@@ -38,9 +38,8 @@ import java.time.Duration;
 import java.util.*;
 
 public class TriggerEvents implements Listener {
-    Dsplugin dsInstance = new Dsplugin();
-    Test testInstance = new Test(dsInstance);
-    HashMap<String, Float> stats = dsInstance.getStats();
+    Test testInstance = new Test(Dsplugin.getInstance());
+    HashMap<String, Float> stats = Dsplugin.getInstance().getStats();
     HashMap<String, Location> baseLocation = new HashMap<String, Location>();
     HashMap<String, String> gracesDiscovered = new HashMap<String, String>();
     HashMap<String, Integer> taskID = new HashMap<String, Integer>();
@@ -161,12 +160,32 @@ public class TriggerEvents implements Listener {
         ItemStack sword = new ItemStack(Material.IRON_SWORD);
         ItemMeta swordMeta = sword.getItemMeta();
         List<Component> swordLore = new ArrayList<>();
-        swordLore.add(Component.text("A katana with a long single-edged curved blade.", NamedTextColor.WHITE, TextDecoration.ITALIC));
-        swordLore.add(Component.text("A unique weapon wielded by the samurai from the Land of Reeds.", NamedTextColor.WHITE, TextDecoration.ITALIC));
-        swordLore.add(Component.text("The blade, with its undulating design, boasts extraordinary sharpness, and its slash attacks cause blood loss.", NamedTextColor.WHITE, TextDecoration.ITALIC));
+        swordLore.add(Component.text("⚔ Attack Power", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Physical 115+  18", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Magic    0", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Fire     0", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
         swordLore.add(Component.text(" "));
-        swordLore.addLast(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
+        swordLore.add(Component.text("💪 Attribute Scaling", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Str D     Dex D", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Int -", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        swordLore.add(Component.text(" "));
+        swordLore.add(Component.text("👕 Passive Effects", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Causes blood loss buildup (45)", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("-", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        swordLore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("-", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        swordLore.add(Component.text(" "));
+        swordLore.add(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
         swordMeta.lore(swordLore);
+        swordMeta.setUnbreakable(true);
+        swordMeta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
         swordMeta.displayName(Component.text("Uchigatana", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         swordMeta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(new NamespacedKey(Dsplugin.getInstance(), "attackSpeed"), -2.5, AttributeModifier.Operation.ADD_NUMBER));
         swordMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
@@ -540,13 +559,14 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onEntityHurt(EntityDamageEvent event) {
         try {
-            if(event.getEntity().getScoreboardTags().contains("iframe") || event.getEntity().getScoreboardTags().contains("dying")) {
-                event.setCancelled(true);
-            }
             if(event.getDamageSource().getCausingEntity() instanceof Player) {
                 Player player = (Player) event.getDamageSource().getCausingEntity();
-                if(player.getScoreboardTags().contains("dying")) {
-                    event.setCancelled(true);
+                if(player.getGameMode().equals(GameMode.CREATIVE) && player.isOp()) {
+                    event.getEntity().remove();
+                    return;
+                }
+                event.setCancelled(true);
+                if(player.getScoreboardTags().contains("dying") || player.getScoreboardTags().contains("iframe")) {
                     return;
                 }
                 if(event.getEntity().getScoreboardTags().contains("stanceBroken")) {
@@ -556,17 +576,45 @@ public class TriggerEvents implements Listener {
                     return;
                 }
                 if(player.getAttackCooldown() != 1) {
-                    event.setCancelled(true);
                     return;
                 }
                 if(stats.get(player.getName() + "_stamina") <= 0) {
-                    event.setCancelled(true);
                     player.sendMessage("Not enough stamina.");
                     return;
                 }
                 if(!player.getScoreboardTags().contains("iframe")) {
                     if(stats.get(player.getName() + "_stamina") >= 1) {
                         try {
+                            //Damage Calculation
+                            double finalDamage = 0;
+                            for(Component line : Objects.requireNonNull(player.getInventory().getItemInMainHand().lore())) {
+                                TextComponent textComponent = (TextComponent) line;
+                                if(textComponent.content().contains("| ")) {
+                                    TextComponent content = (TextComponent) textComponent.children().getFirst();
+                                    String[] values = content.content().split(" ");
+                                    for(String value : values) {
+                                        if(!value.isBlank()) {
+                                            if(value.contains("+")) {
+                                                value = value.replace("+", "");
+                                            }
+                                            try {
+                                                int damage = Integer.parseInt(value);
+                                                finalDamage = finalDamage + damage;
+                                            } catch(NumberFormatException ignore) {
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if(finalDamage == 0) {
+                                return;
+                            }
+                            player.sendMessage("Total Damage " + finalDamage);
+                            if(event.getEntity() instanceof LivingEntity) {
+                                LivingEntity entity = (LivingEntity) event.getEntity();
+                                entity.damage(finalDamage);
+                            }
+                            //Stamina Cost
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Straight Sword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
                                 stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
                             }
@@ -584,6 +632,12 @@ public class TriggerEvents implements Listener {
                             }
                             testInstance.setMaxStamina(player.getName());
                             testInstance.staminaRegen(player.getName());
+                            //Effects
+                            player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1F,1.3F);
+                            Location location = player.getEyeLocation();
+                            location.subtract(0,0.3,0);
+                            location.add(player.getLocation().getDirection().setY(0).normalize());
+                            player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, location, 1,0,0,0,0);
                         } catch (NullPointerException ignore) {
                         }
                     }
@@ -1089,4 +1143,5 @@ public class TriggerEvents implements Listener {
             event.setCancelled(true);
         }
     }
+
 }

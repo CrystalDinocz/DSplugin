@@ -22,8 +22,8 @@ public final class Dsplugin extends JavaPlugin {
     }
     @Override
     public void onEnable() {
-        commandRegister();
         instance = this;
+        commandRegister();
         System.out.println("\nDS Plugin\nON");
         getServer().getPluginManager().registerEvents(new TriggerEvents(), this);
         Bukkit.getBossBars().forEachRemaining(BossBar::removeAll);
