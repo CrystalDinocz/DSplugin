@@ -191,6 +191,7 @@ public class TriggerEvents implements Listener {
         swordMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         sword.setItemMeta(swordMeta);
         player.getInventory().setItem(player.getInventory().firstEmpty(), sword);
+        setItemLore(player);
     }
     public void mainMenu(Player player) {
         Inventory graceInventory = Bukkit.createInventory(null, 9, Component.text("Site of Grace", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
@@ -428,6 +429,118 @@ public class TriggerEvents implements Listener {
         player.showTitle(title);
         player.playSound(player, Sound.BLOCK_END_PORTAL_SPAWN, 1F, 0.4F);
     }
+    public void setItemLore(Player player) {
+        Inventory inventory = player.getInventory();
+        for(ItemStack item : inventory) {
+            try {
+                if (item.getItemMeta().lore().getLast().equals(Component.text("Straight Sword", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
+
+                }
+                if (item.getItemMeta().lore().getLast().equals(Component.text("Great Sword", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
+
+                }
+                if (item.getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
+                    if (item.getItemMeta().displayName().equals(Component.text("Uchigatana", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))) {
+                        //DMG Calculation
+                        int basePhy = 115;
+                        float dexAffinity = 0.35F;
+                        String dexSymbol = "D";
+                        float dexLevel = stats.get(player.getName() + "_dexterity") + 9;
+                        float dexScaling = getDexScaling(dexLevel);
+                        float dexDamage = dexAffinity * (basePhy * (dexScaling / 100));
+                        float strAffinity = 0.3F;
+                        String strSymbol = "D";
+                        float strLevel = stats.get(player.getName() + "_strength") + 9;
+                        float strScaling = getStrScaling(strLevel);
+                        float strDamage = strAffinity * (basePhy * (strScaling / 100));
+                        int scalingDamage = Math.round(dexDamage + strDamage);
+                        //Item Lore
+                        List<Component> Lore = new ArrayList<>();
+                        Lore.add(Component.text("⚔ Attack Power", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("Physical " + basePhy + "+  " + scalingDamage, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("Magic    0", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("Fire     0", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text(" "));
+                        Lore.add(Component.text("💪 Attribute Scaling", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("Str " + strSymbol + "     Dex " + dexSymbol, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("Int -", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text(" "));
+                        Lore.add(Component.text("👕 Passive Effects", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("Causes blood loss buildup (45)", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("-", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text("| ", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("-", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                        Lore.add(Component.text(" "));
+                        Lore.add(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
+                        ItemMeta itemMeta = item.getItemMeta();
+                        itemMeta.lore(Lore);
+                        item.setItemMeta(itemMeta);
+                    }
+                }
+                if (item.getItemMeta().lore().getLast().equals(Component.text("Axe", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
+
+                }
+                if (item.getItemMeta().lore().getLast().equals(Component.text("Hammer", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
+
+                }
+            } catch (NullPointerException ignore) {
+            }
+        }
+    }
+    private static float getDexScaling(float dexLevel) {
+        float dexScaling = 0;
+        if(dexLevel >= 10 && dexLevel <= 20) {
+            dexScaling = 15 + ((dexLevel - 10) * 2);
+        }
+        if(dexLevel > 20 && dexLevel <= 30) {
+            dexScaling = (float) (35 + ((dexLevel - 20) * 1.15));
+        }
+        if(dexLevel > 30 && dexLevel <= 40) {
+            dexScaling = (float) (46.5 + ((dexLevel - 30) * 1.1));
+        }
+        if(dexLevel > 40 && dexLevel <= 50) {
+            dexScaling = (float) (57.5 + (dexLevel - 40));
+        }
+        if(dexLevel > 50 && dexLevel <= 60) {
+            dexScaling = (float) (67.5 + ((dexLevel - 50) * 0.8));
+        }
+        return dexScaling;
+    }
+    private static float getStrScaling(float strLevel) {
+        float strScaling = 0;
+        if(strLevel >= 10 && strLevel <= 20) {
+            strScaling = 15 + ((strLevel - 10) * 2);
+        }
+        if(strLevel > 20 && strLevel <= 30) {
+            strScaling = (float) (35 + ((strLevel - 20) * 1.15));
+        }
+        if(strLevel > 30 && strLevel <= 40) {
+            strScaling = (float) (46.5 + ((strLevel - 30) * 1.1));
+        }
+        if(strLevel > 40 && strLevel <= 50) {
+            strScaling = (float) (57.5 + (strLevel - 40));
+        }
+        if(strLevel > 50 && strLevel <= 60) {
+            strScaling = (float) (67.5 + ((strLevel - 50) * 0.8));
+        }
+        return strScaling;
+    }
+    public void addRunes(Player player) {
+        float runesHeld = stats.get(player.getName() + "_runesHeld");
+        float runesGiven = 100000000;
+        if(player.getScoreboardTags().contains("runesHeld_" + runesHeld)) {
+            player.removeScoreboardTag("runesHeld_" + runesHeld);
+        }
+        stats.put(player.getName() + "_runesHeld", runesHeld + runesGiven);
+        player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+    }
     public void storeValues(Player player) {
         for(String tag : player.getScoreboardTags()) {
             if(tag.contains("rollCount_")) {
@@ -559,6 +672,10 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onEntityHurt(EntityDamageEvent event) {
         try {
+            if(event.getEntity().getScoreboardTags().contains("dying") || event.getEntity().getScoreboardTags().contains("iframe")) {
+                event.setCancelled(true);
+                return;
+            }
             if(event.getDamageSource().getCausingEntity() instanceof Player) {
                 Player player = (Player) event.getDamageSource().getCausingEntity();
                 if(player.getGameMode().equals(GameMode.CREATIVE) && player.isOp()) {
@@ -612,6 +729,9 @@ public class TriggerEvents implements Listener {
                             player.sendMessage("Total Damage " + finalDamage);
                             if(event.getEntity() instanceof LivingEntity) {
                                 LivingEntity entity = (LivingEntity) event.getEntity();
+                                if(finalDamage >= entity.getHealth()) {
+                                    addRunes(player);
+                                }
                                 entity.damage(finalDamage);
                             }
                             //Stamina Cost
@@ -675,6 +795,7 @@ public class TriggerEvents implements Listener {
         player.sendMessage(stats.entrySet().toString());
         player.setExperienceLevelAndProgress(0);
         player.setLevel(stats.get(player.getName() + "_level").intValue());
+        setItemLore(player);
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {
@@ -928,6 +1049,7 @@ public class TriggerEvents implements Listener {
                                 .append(event.getCurrentItem().displayName()));
                     }
                 }
+                setItemLore(player);
                 grace(player);
                 levelMenu(player);
             } catch (NullPointerException ignore) {
@@ -951,14 +1073,6 @@ public class TriggerEvents implements Listener {
     }
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        if(event.getDamageSource().getCausingEntity() instanceof Player) {
-            Player player = (Player) event.getDamageSource().getCausingEntity();
-            if(player.getScoreboardTags().contains("runesHeld_" + stats.get(player.getName() + "_runesHeld"))) {
-                player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
-            }
-            stats.put(player.getName() + "_runesHeld", stats.get(player.getName() + "_runesHeld") + 1000000000);
-            player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
-        }
         if(event.getEntity() instanceof Horse) {
             if(!event.getEntity().getPassengers().isEmpty()) {
                 for(Entity passenger : event.getEntity().getPassengers()) {
@@ -1143,5 +1257,4 @@ public class TriggerEvents implements Listener {
             event.setCancelled(true);
         }
     }
-
 }
