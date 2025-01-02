@@ -191,7 +191,7 @@ public class TriggerEvents implements Listener {
         swordMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         sword.setItemMeta(swordMeta);
         player.getInventory().setItem(player.getInventory().firstEmpty(), sword);
-        setItemLore(player);
+        setItemLore(player, player.getInventory());
     }
     public void mainMenu(Player player) {
         Inventory graceInventory = Bukkit.createInventory(null, 9, Component.text("Site of Grace", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
@@ -348,8 +348,8 @@ public class TriggerEvents implements Listener {
             Lore.add(Component.text("Level: " + Math.round(stats.get(player.getName() + "_level")), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
         }
         Lore.add(Component.text(""));
-        Lore.add(Component.text("Runes Held: " + Math.round(stats.get(player.getName() + "_runesHeld")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-        Lore.add(Component.text("Runes Needed: " + Math.round(stats.get(player.getName() + "_runesNeeded")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("Runes Held: 💮 " + Math.round(stats.get(player.getName() + "_runesHeld")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("Runes Needed: 💮 " + Math.round(stats.get(player.getName() + "_runesNeeded")), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         Lore.add(Component.text(""));
         Lore.add(Component.text("HP: " + ((float) player.getAttribute(Attribute.MAX_HEALTH).getBaseValue()), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         Lore.add(Component.text("FP: " + stats.get(player.getName() + "_maxFP"), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
@@ -391,6 +391,45 @@ public class TriggerEvents implements Listener {
         }
         player.openInventory(graceInventory);
     }
+    public static void upgradeMenu(Player player) {
+        Inventory upgradeGUI = Bukkit.createInventory(null, 27, Component.text("🔨 Smithing Table", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        List<Component> Lore = new ArrayList<>();
+        AttributeModifier dummy = new AttributeModifier(new NamespacedKey(Dsplugin.getInstance(), "luck"), 1, AttributeModifier.Operation.ADD_NUMBER);
+        ItemStack item1 = new ItemStack(Material.ANVIL);
+        ItemMeta itemMeta1 = item1.getItemMeta();
+        itemMeta1.displayName(Component.text("Smithing Table", NamedTextColor.GRAY, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        item1.setItemMeta(itemMeta1);
+        ItemStack item2 = new ItemStack(Material.BARRIER);
+        ItemMeta itemMeta2 = item2.getItemMeta();
+        itemMeta2.displayName(Component.text("Empty", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC,false)
+                .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                .append(Component.text(" on your armament to put it on the smithing table.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+        itemMeta2.lore(Lore);
+        item2.setItemMeta(itemMeta2);
+        Lore.clear();
+        ItemStack item3 = new ItemStack(Material.MACE);
+        ItemMeta itemMeta3 = item3.getItemMeta();
+        itemMeta3.displayName(Component.text("Upgrade Armament", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("Required Items:", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("-", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text(" "));
+        Lore.add(Component.text("Cost:", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text("-", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text(""));
+        Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC,false)
+                .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                .append(Component.text(" on this item to upgrade your armament.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+        itemMeta3.lore(Lore);
+        itemMeta3.addAttributeModifier(Attribute.LUCK, dummy);
+        itemMeta3.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        item3.setItemMeta(itemMeta3);
+        upgradeGUI.setItem(4, item1);
+        upgradeGUI.setItem(10, item2);
+        upgradeGUI.setItem(16, item2);
+        upgradeGUI.setItem(13, item3);
+        player.openInventory(upgradeGUI);
+    }
     public void grace(Player player) {
         if(player.getScoreboardTags().contains("deadTorrent")) {
             player.removeScoreboardTag("deadTorrent");
@@ -429,8 +468,7 @@ public class TriggerEvents implements Listener {
         player.showTitle(title);
         player.playSound(player, Sound.BLOCK_END_PORTAL_SPAWN, 1F, 0.4F);
     }
-    public void setItemLore(Player player) {
-        Inventory inventory = player.getInventory();
+    public void setItemLore(Player player, Inventory inventory) {
         for(ItemStack item : inventory) {
             try {
                 if (item.getItemMeta().lore().getLast().equals(Component.text("Straight Sword", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
@@ -440,15 +478,38 @@ public class TriggerEvents implements Listener {
 
                 }
                 if (item.getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
-                    if (item.getItemMeta().displayName().equals(Component.text("Uchigatana", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))) {
+                    if(((TextComponent) item.getItemMeta().displayName()).content().contains("Uchigatana")) {
                         //DMG Calculation
+                        String name = ((TextComponent) item.getItemMeta().displayName()).content();
+                        int upgrade = 0;
+                        name = name.replace("Uchigatana", "");
+                        if(!name.isEmpty()) {
+                            if(name.contains(" +")) {
+                                name = name.replace(" +", "");
+                                upgrade = Integer.parseInt(name);
+                            }
+                        }
                         int basePhy = 115;
-                        float dexAffinity = 0.35F;
-                        String dexSymbol = "D";
+                        if(upgrade % 3 == 1) {
+                            basePhy = 121 + (20 * ((upgrade - 1) / 3));
+                        }
+                        if(upgrade % 3 == 2) {
+                            basePhy = 128 + (20 * ((upgrade - 2) / 3));
+                        }
+                        if(upgrade % 3 == 0) {
+                            basePhy = 115 + (20 * (upgrade / 3));
+                        }
+                        float dexAffinity = 0.55F + (0.01F * upgrade);
+                        String dexSymbol = "-";
+                        if(dexAffinity < 0.6)  {
+                            dexSymbol = dexSymbol.replace("-", "D");
+                        } else {
+                            dexSymbol = dexSymbol.replace("-", "C");
+                        }
                         float dexLevel = stats.get(player.getName() + "_dexterity") + 9;
                         float dexScaling = getDexScaling(dexLevel);
                         float dexDamage = dexAffinity * (basePhy * (dexScaling / 100));
-                        float strAffinity = 0.3F;
+                        float strAffinity = 0.3F + (0.006F * upgrade);
                         String strSymbol = "D";
                         float strLevel = stats.get(player.getName() + "_strength") + 9;
                         float strScaling = getStrScaling(strLevel);
@@ -795,7 +856,7 @@ public class TriggerEvents implements Listener {
         player.sendMessage(stats.entrySet().toString());
         player.setExperienceLevelAndProgress(0);
         player.setLevel(stats.get(player.getName() + "_level").intValue());
-        setItemLore(player);
+        setItemLore(player, player.getInventory());
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {
@@ -839,11 +900,27 @@ public class TriggerEvents implements Listener {
         ItemMeta graceMeta3 = graceCheck3.getItemMeta();
         graceMeta3.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck3.setItemMeta(graceMeta3);
+        ItemStack smithingCheck = new ItemStack(Material.ANVIL);
+        ItemMeta smithingMeta = smithingCheck.getItemMeta();
+        smithingMeta.displayName(Component.text("Smithing Table", NamedTextColor.GRAY, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        smithingCheck.setItemMeta(smithingMeta);
         if(event.getInventory().contains(graceCheck) || event.getInventory().contains(graceCheck2) || event.getInventory().contains(graceCheck3)) {
             player.setLevel(stats.get(player.getName() + "_level").intValue());
             String selector = String.format("@e[tag=%s_sit]", event.getPlayer().getName());
             for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
                 entity.remove();
+            }
+        }
+        if(event.getInventory().contains(smithingCheck)) {
+            if(player.getScoreboardTags().contains("upgrading")) {
+                player.removeScoreboardTag("upgrading");
+                return;
+            }
+            try {
+                if (!event.getInventory().getItem(10).getType().equals(Material.BARRIER)) {
+                    player.getInventory().setItem(player.getInventory().firstEmpty(), event.getInventory().getItem(10));
+                }
+            } catch (NullPointerException ignore) {
             }
         }
 
@@ -863,6 +940,10 @@ public class TriggerEvents implements Listener {
         ItemMeta graceMeta3 = graceCheck3.getItemMeta();
         graceMeta3.displayName(Component.text("Travel", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck3.setItemMeta(graceMeta3);
+        ItemStack smithingCheck = new ItemStack(Material.ANVIL);
+        ItemMeta smithingMeta = smithingCheck.getItemMeta();
+        smithingMeta.displayName(Component.text("Smithing Table", NamedTextColor.GRAY, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        smithingCheck.setItemMeta(smithingMeta);
         if(event.getInventory().contains(graceCheck3)) {
             event.setCancelled(true);
             try {
@@ -1049,9 +1130,57 @@ public class TriggerEvents implements Listener {
                                 .append(event.getCurrentItem().displayName()));
                     }
                 }
-                setItemLore(player);
+                setItemLore(player, player.getInventory());
                 grace(player);
                 levelMenu(player);
+            } catch (NullPointerException ignore) {
+            }
+        }
+        if(event.getInventory().contains(smithingCheck)) {
+            event.setCancelled(true);
+            try {
+                if(event.getClick().isLeftClick()) {
+                    if(event.getCurrentItem().getType().equals(Material.MACE)) {
+                        if(event.getClickedInventory().getItem(10).getType().equals(Material.BARRIER)) {
+                            player.sendMessage(Component.text("You must first select an armament to upgrade.", NamedTextColor.RED));
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                        } else {
+                            player.getInventory().setItem(player.getInventory().firstEmpty(), event.getClickedInventory().getItem(16));
+                            player.playSound(player, Sound.BLOCK_ANVIL_DESTROY, 1F, 1.3F);
+                            player.addScoreboardTag("upgrading");
+                            upgradeMenu(player);
+                        }
+                    }
+                    if(event.getClickedInventory().equals(player.getInventory())) {
+                        String lastLine = ((TextComponent) event.getCurrentItem().getItemMeta().lore().getLast()).content();
+                        String displayName = ((TextComponent) event.getCurrentItem().getItemMeta().displayName()).content();
+                        if(lastLine.equals("Straight Sword") || lastLine.equals("Great Sword") || lastLine.equals("Katana") || lastLine.equals("Axe") || lastLine.equals("Hammer")) {
+                            if(!displayName.contains("+25")) {
+                                ItemStack upgradedItem = event.getCurrentItem().clone();
+                                ItemMeta upgradedMeta = upgradedItem.getItemMeta();
+                                int upgradeLevel = 0;
+                                if(!displayName.contains("+")) {
+                                    upgradeLevel = 1;
+                                    upgradedMeta.displayName(Component.text(displayName + " +" + upgradeLevel, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                                } else {
+                                    int plusIndex = displayName.indexOf("+");
+                                    String currLevel = displayName.substring(plusIndex + 1);
+                                    upgradeLevel = Integer.parseInt(currLevel) + 1;
+                                    upgradedMeta.displayName(Component.text(displayName.replace(currLevel, String.valueOf(upgradeLevel)), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                                }
+                                upgradedItem.setItemMeta(upgradedMeta);
+                                event.getInventory().setItem(10, event.getCurrentItem());
+                                event.getInventory().setItem(16, upgradedItem);
+                                player.getInventory().setItem(event.getSlot(), null);
+                                setItemLore(player, event.getInventory());
+                                player.playSound(player, Sound.ENTITY_HORSE_ARMOR, 1F, 1.7F);
+                            } else {
+                                player.sendMessage(Component.text("This armament can't be upgraded any further", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                                player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                            }
+                        }
+                    }
+                }
             } catch (NullPointerException ignore) {
             }
         }
@@ -1072,7 +1201,7 @@ public class TriggerEvents implements Listener {
         }
     }
     @EventHandler
-    public void onEntityDeath(EntityDeathEvent event) {
+    public void onEntityDeath(EntityDeathEvent event)   {
         if(event.getEntity() instanceof Horse) {
             if(!event.getEntity().getPassengers().isEmpty()) {
                 for(Entity passenger : event.getEntity().getPassengers()) {

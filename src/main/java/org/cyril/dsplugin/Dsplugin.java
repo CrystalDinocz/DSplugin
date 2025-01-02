@@ -19,6 +19,7 @@ public final class Dsplugin extends JavaPlugin {
         Bukkit.getCommandMap().register("whistle", new TorrentWhistle("whistle"));
         Bukkit.getCommandMap().register("creategrace", new SummonGrace("creategrace"));
         Bukkit.getCommandMap().register("flasks", new GiveFlasks("flasks"));
+        Bukkit.getCommandMap().register("blacksmith", new SmithingTable("blacksmith"));
     }
     @Override
     public void onEnable() {
