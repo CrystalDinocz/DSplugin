@@ -13,10 +13,7 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -424,10 +421,30 @@ public class TriggerEvents implements Listener {
         itemMeta3.addAttributeModifier(Attribute.LUCK, dummy);
         itemMeta3.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item3.setItemMeta(itemMeta3);
+        ItemStack filler1 = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack filler2 = new ItemStack(Material.WHITE_STAINED_GLASS_PANE);
+        ItemMeta fillerMeta = filler1.getItemMeta();
+        fillerMeta.displayName(Component.text(""));
+        filler1.setItemMeta(fillerMeta);
+        filler2.setItemMeta(fillerMeta);
         upgradeGUI.setItem(4, item1);
         upgradeGUI.setItem(10, item2);
         upgradeGUI.setItem(16, item2);
         upgradeGUI.setItem(13, item3);
+        for(int i = 0; i < 27; i++) {
+            if(i < 9 && i != 4) {
+                upgradeGUI.setItem(i, filler1);
+            }
+            if(i >= 18) {
+                upgradeGUI.setItem(i, filler1);
+            }
+        }
+        upgradeGUI.setItem(9, filler1);
+        upgradeGUI.setItem(17, filler1);
+        upgradeGUI.setItem(11, filler2);
+        upgradeGUI.setItem(12, filler2);
+        upgradeGUI.setItem(14, filler2);
+        upgradeGUI.setItem(15, filler2);
         player.openInventory(upgradeGUI);
     }
     public void grace(Player player) {
@@ -795,7 +812,9 @@ public class TriggerEvents implements Listener {
                                 }
                                 entity.damage(finalDamage);
                             }
-                            //Stamina Cost
+                            //Stamina Cost and Stance Damage
+                            String uuid = event.getEntity().getUniqueId().toString();
+                            float entityPoise = stats.get(uuid + "_poise");
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Straight Sword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
                                 stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
                             }
@@ -803,13 +822,33 @@ public class TriggerEvents implements Listener {
                                 stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
                             }
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
-                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
+                                if(player.getFallDistance() != 0) {
+                                    stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
+                                    stats.put(uuid + "_poise", entityPoise - 7.5F);
+                                    player.sendMessage("Jump Attack");
+                                } else if (player.isSprinting() ) {
+                                    stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
+                                    stats.put(uuid + "_poise", entityPoise - 5);
+                                    player.sendMessage("Running Attack");
+                                } else {
+                                    stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
+                                    stats.put(uuid + "_poise", entityPoise - 5);
+                                }
                             }
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Axe", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
                                 stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
                             }
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Hammer", NamedTextColor.DARK_GRAY))) {
                                 stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
+                            }
+                            if(stats.get(uuid + "_poise") <= 0) {
+                                player.playSound(player, Sound.BLOCK_ANVIL_LAND, 1, 0.7F);
+                                player.playSound(player, Sound.ENTITY_IRON_GOLEM_REPAIR, 1, 1F);
+                                stats.put(uuid + "_poise", stats.get(uuid + "_maxPoise"));
+                                event.getEntity().setVelocity(new Vector(0,3,0));
+                                player.sendMessage("stance broken");
+                            } else {
+                                testInstance.poiseRegen(uuid);
                             }
                             testInstance.setMaxStamina(player.getName());
                             testInstance.staminaRegen(player.getName());
@@ -1384,6 +1423,21 @@ public class TriggerEvents implements Listener {
         }
         if(event.getPlayer().getScoreboardTags().contains("drinking")) {
             event.setCancelled(true);
+        }
+    }
+    @EventHandler
+    public void onEntitySpawn(EntitySpawnEvent event) {
+        if(event.getEntity() instanceof LivingEntity && !event.getEntity().getType().equals(EntityType.ARMOR_STAND)) {
+            LivingEntity entity = (LivingEntity) event.getEntity();
+            String uuid = entity.getUniqueId().toString();
+            entity.addScoreboardTag("maxPoise_80");
+            stats.put(uuid + "_maxPoise", 80F);
+            stats.put(uuid + "_poise", 80F);
+            if(entity.getType().equals(EntityType.WARDEN)) {
+                entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20000);
+                entity.setHealth(20000);
+            }
+            Bukkit.broadcast(Component.text(entity.getAbsorptionAmount()));
         }
     }
 }

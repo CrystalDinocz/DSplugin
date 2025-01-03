@@ -1,5 +1,6 @@
 package org.cyril.dsplugin;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.boss.BarColor;
@@ -9,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 public class Test {
     HashMap<String, Integer> taskID = new HashMap<String, Integer>();
@@ -133,13 +135,45 @@ public class Test {
             }
         };
         try {
-            Bukkit.getServer().getScheduler().cancelTask(taskID.get("lastRepeat"));
-//            player.sendMessage("Canceled task " + taskID.get("lastRepeat"));
+            Bukkit.getServer().getScheduler().cancelTask(taskID.get(name + "_lastRepeat"));
+//            player.sendMessage("Canceled task " + taskID.get(name + "_lastRepeat"));
         } catch (NullPointerException ignore) {
         }
         repeat.runTaskTimer(Dsplugin.getInstance(), 40, 1);
         showStamina(name);
 //        player.sendMessage("Started task " + repeat.getTaskId());
-        taskID.put("lastRepeat", repeat.getTaskId());
+        taskID.put(name + "_lastRepeat", repeat.getTaskId());
+    }
+    public void poiseRegen(String uuid) {
+        HashMap<String, Float> stats = dsInstance.getStats();
+        int regenDelay = (int) ((stats.get(uuid + "_maxPoise") / 13) * 20);
+        BukkitRunnable repeat = new BukkitRunnable() {
+            @Override
+            public void run() {
+                float poisePerTick = 0.65F;
+                try {
+                    Boolean livingCheck = Bukkit.getEntity(UUID.fromString(uuid)).isDead();
+                } catch (NullPointerException nullPointerException) {
+                    Bukkit.broadcast(Component.text("Entity died"));
+                    cancel();
+                    return;
+                }
+                if(stats.get(uuid + "_poise") + poisePerTick >= stats.get(uuid + "_maxPoise")) {
+                    stats.put(uuid + "_poise", stats.get(uuid + "_maxPoise"));
+                    Bukkit.broadcast(Component.text(stats.get(uuid + "_poise") + "/" + stats.get(uuid + "_maxPoise")));
+                    cancel();
+                } else {
+                    stats.put(uuid + "_poise", stats.get(uuid + "_poise") + poisePerTick);
+                    Bukkit.broadcast(Component.text(stats.get(uuid + "_poise") + "/" + stats.get(uuid + "_maxPoise")));
+                }
+            }
+        };
+        try {
+            Bukkit.getScheduler().cancelTask(taskID.get(uuid + "_poiseRegen"));
+        } catch (NullPointerException ignore) {
+        }
+        repeat.runTaskTimer(Dsplugin.getInstance(), regenDelay, 1);
+        Bukkit.broadcast(Component.text(stats.get(uuid + "_poise") + "/" + stats.get(uuid + "_maxPoise")));
+        taskID.put(uuid + "_poiseRegen", repeat.getTaskId());
     }
 }

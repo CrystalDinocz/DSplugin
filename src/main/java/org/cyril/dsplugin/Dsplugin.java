@@ -4,6 +4,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -34,6 +36,21 @@ public final class Dsplugin extends JavaPlugin {
         }
         for(World world : Bukkit.getWorlds()) {
             world.setGameRule(GameRule.KEEP_INVENTORY, true);
+        }
+        for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), "@e[type=!minecraft:armor_stand,type=!minecraft:player]")) {
+            if(entity instanceof LivingEntity) {
+                LivingEntity livingEntity = (LivingEntity) entity;
+                String uuid = livingEntity.getUniqueId().toString();
+                if(!livingEntity.getScoreboardTags().isEmpty()) {
+                    for(String tag : livingEntity.getScoreboardTags()) {
+                        if(tag.contains("maxPoise_")) {
+                            float maxPoise = Float.parseFloat(tag.replace("maxPoise_", ""));
+                            stats.put(uuid + "_maxPoise", maxPoise);
+                            stats.put(uuid + "_poise", maxPoise);
+                        }
+                    }
+                }
+            }
         }
     }
     public static Dsplugin getInstance() {
