@@ -1,1 +1,1 @@
-A work in progress Elden Ring themed java Minecraft server plugin.
+A work in progress heavily Elden Ring themed java Minecraft server plugin.
