@@ -22,6 +22,7 @@ public final class Dsplugin extends JavaPlugin {
         Bukkit.getCommandMap().register("creategrace", new SummonGrace("creategrace"));
         Bukkit.getCommandMap().register("flasks", new GiveFlasks("flasks"));
         Bukkit.getCommandMap().register("blacksmith", new SmithingTable("blacksmith"));
+        Bukkit.getCommandMap().register("stones", new GiveStones("stones"));
     }
     @Override
     public void onEnable() {
@@ -57,4 +58,3 @@ public final class Dsplugin extends JavaPlugin {
         return instance;
     }
 }
-

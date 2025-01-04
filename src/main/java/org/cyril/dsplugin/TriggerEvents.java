@@ -612,7 +612,7 @@ public class TriggerEvents implements Listener {
     }
     public void addRunes(Player player) {
         float runesHeld = stats.get(player.getName() + "_runesHeld");
-        float runesGiven = 100000000;
+        float runesGiven = 10000;
         if(player.getScoreboardTags().contains("runesHeld_" + runesHeld)) {
             player.removeScoreboardTag("runesHeld_" + runesHeld);
         }
@@ -701,6 +701,25 @@ public class TriggerEvents implements Listener {
             return;
         }
         if(event.isSneaking()) {
+            float rollMultiplier;
+            String rollDirection;
+            if(player.getCurrentInput().isRight()) {
+                player.sendMessage("Right");
+                rollMultiplier = -1;
+                rollDirection = "right";
+            } else if (player.getCurrentInput().isLeft()) {
+                player.sendMessage("Left");
+                rollMultiplier = 1;
+                rollDirection = "left";
+            } else if (player.getCurrentInput().isBackward()) {
+                player.sendMessage("Back");
+                rollMultiplier = -1;
+                rollDirection = "back";
+            } else {
+                player.sendMessage("Forward");
+                rollMultiplier = 1;
+                rollDirection = "forward";
+            }
             BukkitRunnable Recovery = new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -724,7 +743,7 @@ public class TriggerEvents implements Listener {
                     } else {
                         player.setPose(Pose.SWIMMING);
                         player.setSneaking(false);
-                        Rolling.Roll(player);
+                        Rolling.Roll(player, rollMultiplier, rollDirection);
                         duration++;
                     }
                 }
@@ -1184,10 +1203,61 @@ public class TriggerEvents implements Listener {
                             player.sendMessage(Component.text("You must first select an armament to upgrade.", NamedTextColor.RED));
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                         } else {
-                            player.getInventory().setItem(player.getInventory().firstEmpty(), event.getClickedInventory().getItem(16));
-                            player.playSound(player, Sound.BLOCK_ANVIL_DESTROY, 1F, 1.3F);
-                            player.addScoreboardTag("upgrading");
-                            upgradeMenu(player);
+                            String displayName = ((TextComponent) event.getInventory().getItem(10).getItemMeta().displayName()).content();
+                            int currLevel;
+                            if(!displayName.contains("+")) {
+                                currLevel = 0;
+                            } else {
+                                int plusIndex = displayName.indexOf("+");
+                                currLevel = Integer.parseInt(displayName.substring(plusIndex + 1));
+                            }
+                            int runeCost = 1000 + (currLevel * 84);
+                            int stoneCost = 0;
+                            int stoneLevel;
+                            if(currLevel == 24) {
+                                stoneCost = 1;
+                            } else if (currLevel % 3 == 0) {
+                                stoneCost = 2;
+                            } else if (currLevel % 3 == 1) {
+                                stoneCost = 4;
+                            } else if (currLevel % 3 == 2) {
+                                stoneCost = 6;
+                            }
+                            stoneLevel = ((currLevel / 3) + 1);
+                            ItemStack stone = new ItemStack(Material.ARMADILLO_SCUTE);
+                            ItemMeta stoneMeta = stone.getItemMeta();
+                            List<Component> Lore = new ArrayList<>();
+                            String stoneName;
+                            if (stoneLevel == 9) {
+                                stoneName = "Ancient Dragon Smithing Stone";
+                                stoneMeta.displayName(Component.text(stoneName, NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                                Lore.add(Component.text("Strengthens armaments to +25.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                            } else {
+                                stoneName = "Smithing Stone [" + stoneLevel + "]";
+                                stoneMeta.displayName(Component.text(stoneName, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+                                Lore.add(Component.text("Strengthens armaments to +" + (3 * stoneLevel) + ".", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                            }
+                            stoneMeta.lore(Lore);
+                            stone.setItemMeta(stoneMeta);
+                            if(player.getInventory().containsAtLeast(stone, stoneCost)) {
+                                if(stats.get(player.getName() + "_runesHeld") >= runeCost) {
+                                    player.getInventory().setItem(player.getInventory().firstEmpty(), event.getClickedInventory().getItem(16));
+                                    stone.setAmount(stoneCost);
+                                    player.getInventory().removeItem(stone);
+                                    player.removeScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                                    stats.put(player.getName() + "_runesHeld", (stats.get(player.getName() + "_runesHeld") - runeCost));
+                                    player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+                                    player.playSound(player, Sound.BLOCK_ANVIL_DESTROY, 1F, 1.3F);
+                                    player.addScoreboardTag("upgrading");
+                                    upgradeMenu(player);
+                                } else {
+                                    player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
+                                    player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                                }
+                            } else {
+                                player.sendMessage(Component.text("Not enough smithing stones.", NamedTextColor.RED));
+                                player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                            }
                         }
                     }
                     if(event.getClickedInventory().equals(player.getInventory())) {
@@ -1197,21 +1267,56 @@ public class TriggerEvents implements Listener {
                             if(!displayName.contains("+25")) {
                                 ItemStack upgradedItem = event.getCurrentItem().clone();
                                 ItemMeta upgradedMeta = upgradedItem.getItemMeta();
-                                int upgradeLevel = 0;
+                                int upgradeLevel;
+                                int currLevel;
                                 if(!displayName.contains("+")) {
+                                    currLevel = 0;
                                     upgradeLevel = 1;
                                     upgradedMeta.displayName(Component.text(displayName + " +" + upgradeLevel, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
                                 } else {
                                     int plusIndex = displayName.indexOf("+");
-                                    String currLevel = displayName.substring(plusIndex + 1);
-                                    upgradeLevel = Integer.parseInt(currLevel) + 1;
-                                    upgradedMeta.displayName(Component.text(displayName.replace(currLevel, String.valueOf(upgradeLevel)), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                                    currLevel = Integer.parseInt(displayName.substring(plusIndex + 1));
+                                    upgradeLevel = currLevel + 1;
+                                    upgradedMeta.displayName(Component.text(displayName.replace(String.valueOf(currLevel), String.valueOf(upgradeLevel)), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
                                 }
                                 upgradedItem.setItemMeta(upgradedMeta);
                                 event.getInventory().setItem(10, event.getCurrentItem());
                                 event.getInventory().setItem(16, upgradedItem);
                                 player.getInventory().setItem(event.getSlot(), null);
                                 setItemLore(player, event.getInventory());
+                                int runeCost = 1000 + (currLevel * 84);
+                                int stoneCost = 0;
+                                int stoneLevel;
+                                if(currLevel == 24) {
+                                    stoneCost = 1;
+                                } else if (currLevel % 3 == 0) {
+                                    stoneCost = 2;
+                                } else if (currLevel % 3 == 1) {
+                                    stoneCost = 4;
+                                } else if (currLevel % 3 == 2) {
+                                    stoneCost = 6;
+                                }
+                                stoneLevel = ((currLevel / 3) + 1);
+                                String stoneName;
+                                if(stoneLevel == 9) {
+                                    stoneName = "Ancient Dragon Smithing Stone";
+                                } else {
+                                    stoneName = "Smithing Stone [" + stoneLevel + "]";
+                                }
+                                List<Component> Lore = new ArrayList<>();
+                                Lore.add(Component.text("Required Items:", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                                Lore.add(Component.text(stoneName + "  " + stoneCost, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+                                Lore.add(Component.text(" "));
+                                Lore.add(Component.text("Cost:", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                                Lore.add(Component.text("💮 " + runeCost, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+                                Lore.add(Component.text(""));
+                                Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC,false)
+                                        .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                                        .append(Component.text(" on this item to upgrade your armament.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+                                ItemStack item = event.getInventory().getItem(13);
+                                ItemMeta itemMeta = item.getItemMeta();
+                                itemMeta.lore(Lore);
+                                item.setItemMeta(itemMeta);
                                 player.playSound(player, Sound.ENTITY_HORSE_ARMOR, 1F, 1.7F);
                             } else {
                                 player.sendMessage(Component.text("This armament can't be upgraded any further", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
