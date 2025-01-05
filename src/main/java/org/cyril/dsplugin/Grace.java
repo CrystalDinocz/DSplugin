@@ -29,7 +29,7 @@ public class Grace {
                         }
                     }
                 }
-                List<Entity> riposteIndicators = Bukkit.selectEntities(Bukkit.getConsoleSender(), "@e[tag=stanceBroken]");
+                List<Entity> riposteIndicators = Bukkit.selectEntities(Bukkit.getConsoleSender(), "@e[tag=riposteIndicator]");
                 for(Entity entity : riposteIndicators) {
                     Particle.DustOptions dust1 = new Particle.DustOptions(Color.fromRGB(255,241,42), 1F);
                     entity.getWorld().spawnParticle(Particle.DUST, entity.getLocation().add(0,0.5,0), 2, dust1);

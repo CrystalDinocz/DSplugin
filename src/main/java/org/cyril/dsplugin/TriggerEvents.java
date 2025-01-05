@@ -693,6 +693,90 @@ public class TriggerEvents implements Listener {
             }
         }
     }
+    public void stanceBreak(LivingEntity entity) {
+        String uuid = entity.getUniqueId().toString();
+        entity.addScoreboardTag("stanceBroken");
+        entity.setAI(false);
+        Location riposteLocation = entity.getEyeLocation();
+        riposteLocation.setY((entity.getLocation().getY() + riposteLocation.getY()) / 2);
+        riposteLocation.subtract(0,0.5,0);
+        Vector direction = entity.getLocation().getDirection();
+        direction.setY(0);
+        direction.normalize();
+        direction.multiply(0.9);
+        riposteLocation.add(direction);
+        ArmorStand riposte = (ArmorStand) entity.getWorld().spawnEntity(riposteLocation, EntityType.ARMOR_STAND);
+        riposte.setInvisible(true);
+        riposte.setSmall(true);
+        riposte.setGravity(false);
+        riposte.addScoreboardTag("riposteIndicator");
+        riposte.addScoreboardTag("riposte_" + uuid);
+        BukkitTask stanceRegain = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if(entity.getScoreboardTags().contains("stanceBroken")) {
+                    entity.setAI(true);
+                    entity.removeScoreboardTag("stanceBroken");
+                    riposte.remove();
+                    Bukkit.broadcast(Component.text("Stance Regained"));
+                }
+            }
+        }.runTaskLater(Dsplugin.getInstance(), 120);
+    }
+    public void riposteAttack(Entity riposte, Player player, String tag, Double baseDamage) {
+        String uuid = tag.replace("riposte_", "");
+        LivingEntity entity = (LivingEntity) Bukkit.getEntity(UUID.fromString(uuid));
+        if(entity.getScoreboardTags().contains("stanceBroken")) {
+            player.addScoreboardTag("dying");
+            entity.addScoreboardTag("iframe");
+            entity.removeScoreboardTag("stanceBroken");
+            riposte.remove();
+            final int[] timer = {0};
+            double critDamage = baseDamage * 1.8;
+            Location riposteLocation = entity.getLocation();
+            riposteLocation.setX(entity.getEyeLocation().getX());
+            riposteLocation.setZ(entity.getEyeLocation().getZ());
+            Vector entityDirection = entity.getLocation().getDirection();
+            entityDirection.setY(0);
+            entityDirection.normalize();
+            riposteLocation.add(entityDirection);
+            riposteLocation.setDirection(entityDirection.rotateAroundY(Math.PI));
+            player.sendMessage(entity.getHealth() + "/" + entity.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
+            Collection<Player> collection = new ArrayList<>(Bukkit.getOnlinePlayers());
+            BukkitTask riposteAnimation = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if(timer[0] == 15) {
+                        player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 1F);
+                        player.playSound(player, Sound.ENTITY_WITHER_BREAK_BLOCK, 1F, 1.5F);
+                        player.swingMainHand();
+                        entity.setHealth(entity.getHealth() - critDamage);
+                        entity.broadcastHurtAnimation(collection);
+                        player.sendMessage("Riposte 1 " + critDamage);
+                    }
+                    if(timer[0] == 45) {
+                        player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 0.5F);
+                        player.playSound(player, Sound.ENTITY_WITHER_BREAK_BLOCK, 1F, 1F);
+                        player.swingMainHand();
+                        entity.setHealth(entity.getHealth() - Math.round(critDamage / 4));
+                        entity.broadcastHurtAnimation(collection);
+                        player.sendMessage("Riposte 2 " + Math.round(critDamage / 4));
+                        entity.setGravity(true);
+                        entity.setAI(true);
+                        entity.setVelocity(player.getLocation().getDirection().multiply(0.8));
+                    }
+                    if(timer[0] == 60) {
+                        player.removeScoreboardTag("dying");
+                        entity.removeScoreboardTag("iframe");
+                        player.sendMessage(entity.getHealth() + "/" + entity.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
+                        cancel();
+                    }
+                    timer[0]++;
+                    player.teleport(riposteLocation);
+                }
+            }.runTaskTimer(Dsplugin.getInstance(),0,0);
+        }
+    }
     @EventHandler
     public void onShift(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
@@ -775,18 +859,12 @@ public class TriggerEvents implements Listener {
             }
             if(event.getDamageSource().getCausingEntity() instanceof Player) {
                 Player player = (Player) event.getDamageSource().getCausingEntity();
+                event.setCancelled(true);
                 if(player.getGameMode().equals(GameMode.CREATIVE) && player.isOp()) {
                     event.getEntity().remove();
                     return;
                 }
-                event.setCancelled(true);
                 if(player.getScoreboardTags().contains("dying") || player.getScoreboardTags().contains("iframe")) {
-                    return;
-                }
-                if(event.getEntity().getScoreboardTags().contains("stanceBroken")) {
-                    if(event.getEntity().getNearbyEntities(0.4,0.5,0.4).contains(player)) {
-                        player.sendMessage("stab");
-                    }
                     return;
                 }
                 if(player.getAttackCooldown() != 1) {
@@ -801,20 +879,24 @@ public class TriggerEvents implements Listener {
                         try {
                             //Damage Calculation
                             double finalDamage = 0;
-                            for(Component line : Objects.requireNonNull(player.getInventory().getItemInMainHand().lore())) {
-                                TextComponent textComponent = (TextComponent) line;
-                                if(textComponent.content().contains("| ")) {
-                                    TextComponent content = (TextComponent) textComponent.children().getFirst();
-                                    String[] values = content.content().split(" ");
-                                    for(String value : values) {
-                                        if(!value.isBlank()) {
-                                            if(value.contains("+")) {
-                                                value = value.replace("+", "");
-                                            }
-                                            try {
-                                                int damage = Integer.parseInt(value);
-                                                finalDamage = finalDamage + damage;
-                                            } catch(NumberFormatException ignore) {
+                            String lastLine = ((TextComponent) player.getInventory().getItemInMainHand().getItemMeta().lore().getLast()).content();
+                            String displayName = ((TextComponent) player.getInventory().getItemInMainHand().getItemMeta().displayName()).content();
+                            if(lastLine.equals("Straight Sword") || lastLine.equals("Great Sword") || lastLine.equals("Katana") || lastLine.equals("Axe") || lastLine.equals("Hammer") || lastLine.equals("Admin Item")) {
+                                for (Component line : Objects.requireNonNull(player.getInventory().getItemInMainHand().lore())) {
+                                    TextComponent textComponent = (TextComponent) line;
+                                    if (textComponent.content().contains("| ")) {
+                                        TextComponent content = (TextComponent) textComponent.children().getFirst();
+                                        String[] values = content.content().split(" ");
+                                        for (String value : values) {
+                                            if (!value.isBlank()) {
+                                                if (value.contains("+")) {
+                                                    value = value.replace("+", "");
+                                                }
+                                                try {
+                                                    int damage = Integer.parseInt(value);
+                                                    finalDamage = finalDamage + damage;
+                                                } catch (NumberFormatException ignore) {
+                                                }
                                             }
                                         }
                                     }
@@ -822,6 +904,14 @@ public class TriggerEvents implements Listener {
                             }
                             if(finalDamage == 0) {
                                 return;
+                            }
+                            for(String tag : event.getEntity().getScoreboardTags()) {
+                                if(tag.contains("riposte_")) {
+                                    if(event.getEntity().getNearbyEntities(0.4,0.5,0.4).contains(player)) {
+                                        riposteAttack(event.getEntity(), player, tag, finalDamage);
+                                    }
+                                    return;
+                                }
                             }
                             player.sendMessage("Total Damage " + finalDamage);
                             if(event.getEntity() instanceof LivingEntity) {
@@ -834,6 +924,11 @@ public class TriggerEvents implements Listener {
                             //Stamina Cost and Stance Damage
                             String uuid = event.getEntity().getUniqueId().toString();
                             float entityPoise = stats.get(uuid + "_poise");
+                            if(displayName.equals("Stance Breaker")) {
+                                if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
+                                    stats.put(uuid + "_poise", 0F);
+                                }
+                            }
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Straight Sword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
                                 stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
                             }
@@ -843,15 +938,21 @@ public class TriggerEvents implements Listener {
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
                                 if(player.getFallDistance() != 0) {
                                     stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
-                                    stats.put(uuid + "_poise", entityPoise - 7.5F);
+                                    if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
+                                        stats.put(uuid + "_poise", entityPoise - 7.5F);
+                                    }
                                     player.sendMessage("Jump Attack");
                                 } else if (player.isSprinting() ) {
                                     stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
-                                    stats.put(uuid + "_poise", entityPoise - 5);
+                                    if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
+                                        stats.put(uuid + "_poise", entityPoise - 5);
+                                    }
                                     player.sendMessage("Running Attack");
                                 } else {
                                     stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
-                                    stats.put(uuid + "_poise", entityPoise - 5);
+                                    if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
+                                        stats.put(uuid + "_poise", entityPoise - 5);
+                                    }
                                 }
                             }
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Axe", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
@@ -860,12 +961,15 @@ public class TriggerEvents implements Listener {
                             if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Hammer", NamedTextColor.DARK_GRAY))) {
                                 stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
                             }
+                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Stance Breaker", NamedTextColor.DARK_GRAY))) {
+                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
+                            }
                             if(stats.get(uuid + "_poise") <= 0) {
                                 player.playSound(player, Sound.BLOCK_ANVIL_LAND, 1, 0.7F);
                                 player.playSound(player, Sound.ENTITY_IRON_GOLEM_REPAIR, 1, 1F);
                                 stats.put(uuid + "_poise", stats.get(uuid + "_maxPoise"));
-                                event.getEntity().setVelocity(new Vector(0,3,0));
                                 player.sendMessage("stance broken");
+                                stanceBreak((LivingEntity) event.getEntity());
                             } else {
                                 testInstance.poiseRegen(uuid);
                             }
@@ -1538,7 +1642,7 @@ public class TriggerEvents implements Listener {
             entity.addScoreboardTag("maxPoise_80");
             stats.put(uuid + "_maxPoise", 80F);
             stats.put(uuid + "_poise", 80F);
-            if(entity.getType().equals(EntityType.WARDEN)) {
+            if(entity.getType().equals(EntityType.IRON_GOLEM)) {
                 entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20000);
                 entity.setHealth(20000);
             }
