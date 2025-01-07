@@ -393,7 +393,7 @@ public class TriggerEvents implements Listener {
         float crimsonFlasks = stats.get(player.getName() + "_crimsonFlasks");
         float ceruleanFlasks = stats.get(player.getName() + "_ceruleanFlasks");
         int totalFlasks = (int) (crimsonFlasks + ceruleanFlasks);
-        Inventory flaskGUI = Bukkit.createInventory(null, 27, Component.text("Flask Menu"));
+        Inventory flaskGUI = Bukkit.createInventory(null, 27, Component.text("Flask Menu", NamedTextColor.RED));
         ItemStack itemStack1 = new ItemStack(new ItemStack(Material.LIME_WOOL));
         ItemMeta itemMeta1 = itemStack1.getItemMeta();
         itemMeta1.displayName(Component.text("Add charge to flask", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
@@ -441,10 +441,6 @@ public class TriggerEvents implements Listener {
         ItemStack itemStack3 = new ItemStack(Material.BLAZE_POWDER);
         ItemMeta itemMeta3 = itemStack3.getItemMeta();
         itemMeta3.displayName(Component.text("Allocate flask charges", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false));
-        Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
-                .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
-                .append(Component.text(" to allocate flask charges.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
-        itemMeta3.lore(Lore);
         itemStack3.setItemMeta(itemMeta3);
         ItemStack itemStack4 = new ItemStack(Material.REDSTONE);
         ItemMeta itemMeta4 = itemStack4.getItemMeta();
@@ -464,6 +460,65 @@ public class TriggerEvents implements Listener {
             }
         }
         player.openInventory(flaskGUI);
+    }
+    public void allocateMenu(Player player) {
+        List<Component> Lore = new ArrayList<>();
+        float crimsonFlasks = stats.get(player.getName() + "_crimsonFlasks");
+        float ceruleanFlasks = stats.get(player.getName() + "_ceruleanFlasks");
+        Inventory allocateGUI = Bukkit.createInventory(null, 27, Component.text("Please allocate your flask uses", NamedTextColor.YELLOW));
+        ItemStack itemStack = new ItemStack(Material.BLAZE_POWDER);
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        itemMeta.displayName(Component.text("Allocate flask charges", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        itemStack.setItemMeta(itemMeta);
+        ItemStack itemStack1 = new ItemStack(Material.POTION);
+        PotionMeta crimsonMeta = (PotionMeta) itemStack1.getItemMeta();
+        crimsonMeta.setColor(Color.RED);
+        crimsonMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+        crimsonMeta.displayName(Component.text("Flask of Crimson Tears ", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text((int) crimsonFlasks, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                .append(Component.text(" to allocate 1 charge.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+        crimsonMeta.lore(Lore);
+        Lore.clear();
+        crimsonMeta.setMaxStackSize(64);
+        itemStack1.setItemMeta(crimsonMeta);
+        if(crimsonFlasks != 0) {
+            itemStack1.setAmount((int) crimsonFlasks);
+        } else {
+            itemStack1.setAmount(1);
+        }
+        ItemStack itemStack2 = new ItemStack(Material.POTION);
+        PotionMeta ceruleanMeta = (PotionMeta) itemStack2.getItemMeta();
+        ceruleanMeta.setColor(Color.BLUE);
+        ceruleanMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+        ceruleanMeta.displayName(Component.text("Flask of Cerulean Tears ", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC, false)
+                .append(Component.text((int) ceruleanFlasks, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+        Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                .append(Component.keybind("key.attack", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                .append(Component.text(" to allocate 1 charge.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+        ceruleanMeta.lore(Lore);
+        Lore.clear();
+        ceruleanMeta.setMaxStackSize(64);
+        itemStack2.setItemMeta(ceruleanMeta);
+        if(ceruleanFlasks != 0) {
+            itemStack2.setAmount((int) ceruleanFlasks);
+        } else {
+            itemStack2.setAmount(1);
+        }
+        ItemStack dummy = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta dummyMeta = dummy.getItemMeta();
+        dummyMeta.displayName(Component.text(""));
+        dummy.setItemMeta(dummyMeta);
+        allocateGUI.setItem(4, itemStack);
+        allocateGUI.setItem(10, itemStack1);
+        allocateGUI.setItem(16, itemStack2);
+        for(int i = 0; i < 27; i++) {
+            if(i != 4 && i != 10 && i != 16) {
+                allocateGUI.setItem(i, dummy);
+            }
+        }
+        player.openInventory(allocateGUI);
     }
     public static void upgradeMenu(Player player) {
         Inventory upgradeGUI = Bukkit.createInventory(null, 27, Component.text("🔨 Smithing Table", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
@@ -1153,11 +1208,15 @@ public class TriggerEvents implements Listener {
         ItemMeta graceMeta4 = graceCheck4.getItemMeta();
         graceMeta4.displayName(Component.text("Flasks", NamedTextColor.RED, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         graceCheck4.setItemMeta(graceMeta4);
+        ItemStack graceCheck5 = new ItemStack(Material.BLAZE_POWDER);
+        ItemMeta graceMeta5 = graceCheck5.getItemMeta();
+        graceMeta5.displayName(Component.text("Allocate flask charges", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        graceCheck5.setItemMeta(graceMeta5);
         ItemStack smithingCheck = new ItemStack(Material.ANVIL);
         ItemMeta smithingMeta = smithingCheck.getItemMeta();
         smithingMeta.displayName(Component.text("Smithing Table", NamedTextColor.GRAY, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         smithingCheck.setItemMeta(smithingMeta);
-        if(event.getInventory().contains(graceCheck) || event.getInventory().contains(graceCheck2) || event.getInventory().contains(graceCheck3) || event.getInventory().contains(graceCheck4)) {
+        if(event.getInventory().contains(graceCheck) || event.getInventory().contains(graceCheck2) || event.getInventory().contains(graceCheck3) || event.getInventory().contains(graceCheck4) || event.getInventory().contains(graceCheck5)) {
             player.setLevel(stats.get(player.getName() + "_level").intValue());
             String selector = String.format("@e[tag=%s_sit]", event.getPlayer().getName());
             for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
@@ -1201,45 +1260,93 @@ public class TriggerEvents implements Listener {
         ItemMeta smithingMeta = smithingCheck.getItemMeta();
         smithingMeta.displayName(Component.text("Smithing Table", NamedTextColor.GRAY, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         smithingCheck.setItemMeta(smithingMeta);
+        ItemStack graceCheck5 = new ItemStack(Material.BLAZE_POWDER);
+        ItemMeta graceMeta5 = graceCheck5.getItemMeta();
+        graceMeta5.displayName(Component.text("Allocate flask charges", NamedTextColor.DARK_AQUA, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        graceCheck5.setItemMeta(graceMeta5);
+        if(event.getInventory().contains(graceCheck5)) {
+            event.setCancelled(true);
+            if(event.getClick().isLeftClick()) {
+                try {
+                    if (event.getCurrentItem().getType().equals(Material.POTION)) {
+                        if (((PotionMeta) event.getCurrentItem().getItemMeta()).getColor().equals(Color.RED)) {
+                            if (stats.get(player.getName() + "_ceruleanFlasks") != 0) {
+                                player.removeScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
+                                stats.put(player.getName() + "_crimsonFlasks", (stats.get(player.getName() + "_crimsonFlasks") + 1));
+                                player.addScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
+                                player.removeScoreboardTag("ceruleanFlasks_" + stats.get(player.getName() + "_ceruleanFlasks"));
+                                stats.put(player.getName() + "_ceruleanFlasks", (stats.get(player.getName() + "_ceruleanFlasks") - 1));
+                                player.addScoreboardTag("ceruleanFlasks_" + stats.get(player.getName() + "_ceruleanFlasks"));
+                            } else {
+                                player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                                player.sendMessage(Component.text("You can't allocate any more charges to this flask.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                            }
+                        }
+                        if (((PotionMeta) event.getCurrentItem().getItemMeta()).getColor().equals(Color.BLUE)) {
+                            if (stats.get(player.getName() + "_crimsonFlasks") != 0) {
+                                player.removeScoreboardTag("ceruleanFlasks_" + stats.get(player.getName() + "_ceruleanFlasks"));
+                                stats.put(player.getName() + "_ceruleanFlasks", (stats.get(player.getName() + "_ceruleanFlasks") + 1));
+                                player.addScoreboardTag("ceruleanFlasks_" + stats.get(player.getName() + "_ceruleanFlasks"));
+                                player.removeScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
+                                stats.put(player.getName() + "_crimsonFlasks", (stats.get(player.getName() + "_crimsonFlasks") - 1));
+                                player.addScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
+                            } else {
+                                player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                                player.sendMessage(Component.text("You can't allocate any more charges to this flask.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                            }
+                        }
+                        allocateMenu(player);
+                        grace(player);
+                    }
+                } catch (NullPointerException ignore) {
+                }
+            }
+        }
         if(event.getInventory().contains(graceCheck4)) {
             event.setCancelled(true);
-            try {
-                List<Component> Lore = event.getCurrentItem().getItemMeta().lore();
-                if(event.getCurrentItem().getType().equals(Material.LIME_WOOL)) {
-                    ItemStack goldenSeed = new ItemStack(Material.SUNFLOWER);
-                    List<Component> seedLore = new ArrayList<>();
-                    ItemMeta seedMeta = goldenSeed.getItemMeta();
-                    seedMeta.displayName(Component.text("Golden Seed", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC,false));
-                    seedLore.add(Component.text("Increases a Sacred Flask's number of uses.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-                    seedMeta.lore(seedLore);
-                    goldenSeed.setItemMeta(seedMeta);
-                    int flaskCost = 0;
-                    for(Component line : Lore) {
-                        TextComponent textComponent = (TextComponent) line;
-                        if(textComponent.content().contains("Golden Seed  ")) {
-                            flaskCost = Integer.parseInt(textComponent.content().replace("Golden Seed  ", ""));
+            if(event.getClick().isLeftClick()) {
+                try {
+                    List<Component> Lore = event.getCurrentItem().getItemMeta().lore();
+                    if (event.getCurrentItem().getType().equals(Material.LIME_WOOL)) {
+                        ItemStack goldenSeed = new ItemStack(Material.SUNFLOWER);
+                        List<Component> seedLore = new ArrayList<>();
+                        ItemMeta seedMeta = goldenSeed.getItemMeta();
+                        seedMeta.displayName(Component.text("Golden Seed", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                        seedLore.add(Component.text("Increases a Sacred Flask's number of uses.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                        seedMeta.lore(seedLore);
+                        goldenSeed.setItemMeta(seedMeta);
+                        int flaskCost = 0;
+                        for (Component line : Lore) {
+                            TextComponent textComponent = (TextComponent) line;
+                            if (textComponent.content().contains("Golden Seed  ")) {
+                                flaskCost = Integer.parseInt(textComponent.content().replace("Golden Seed  ", ""));
+                            }
                         }
-                    }
-                    if(flaskCost != 0) {
-                        if(player.getInventory().containsAtLeast(goldenSeed, flaskCost)) {
-                            player.removeScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
-                            stats.put(player.getName() + "_crimsonFlasks", (stats.get(player.getName() + "_crimsonFlasks") + 1));
-                            player.addScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
-                            goldenSeed.setAmount(flaskCost);
-                            player.getInventory().removeItem(goldenSeed);
+                        if (flaskCost != 0) {
+                            if (player.getInventory().containsAtLeast(goldenSeed, flaskCost)) {
+                                player.removeScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
+                                stats.put(player.getName() + "_crimsonFlasks", (stats.get(player.getName() + "_crimsonFlasks") + 1));
+                                player.addScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
+                                goldenSeed.setAmount(flaskCost);
+                                player.getInventory().removeItem(goldenSeed);
+                            } else {
+                                player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                                player.sendMessage(Component.text("Not enough Golden Seeds.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                            }
                         } else {
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
-                            player.sendMessage(Component.text("Not enough Golden Seeds.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                            player.sendMessage(Component.text("You already hold the maximum amount of flask charges", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
                         }
-                    } else {
-                        player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
-                        player.sendMessage(Component.text("You already hold the maximum amount of flask charges", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                        grace(player);
+                        flaskMenu(player);
                     }
+                    if (event.getCurrentItem().getType().equals(Material.BLAZE_POWDER)) {
+                        grace(player);
+                        allocateMenu(player);
+                    }
+                } catch (NullPointerException ignore) {
                 }
-            } catch (NullPointerException ignore) {
             }
-            grace(player);
-            flaskMenu(player);
         }
         if(event.getInventory().contains(graceCheck3)) {
             event.setCancelled(true);
