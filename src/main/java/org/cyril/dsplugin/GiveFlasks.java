@@ -34,6 +34,9 @@ public class GiveFlasks extends Command {
             crimsonMeta.displayName(Component.text("Flask of Crimson Tears", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false));
             Lore.add(Component.text("Rest at a site of grace to replenish.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
             Lore.add(Component.text(""));
+            Lore.add(Component.text("Charges left", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+            Lore.add(Component.text("3", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+            Lore.add(Component.text(""));
             Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
                     .append(Component.keybind("key.use", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
                     .append(Component.text(" to restore HP", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC,false)));
@@ -44,6 +47,9 @@ public class GiveFlasks extends Command {
             ceruleanMeta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             ceruleanMeta.displayName(Component.text("Flask of Cerulean Tears", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC, false));
             Lore.add(Component.text("Rest at a site of grace to replenish.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            Lore.add(Component.text(""));
+            Lore.add(Component.text("Charges left", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+            Lore.add(Component.text("1", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
             Lore.add(Component.text(""));
             Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
                     .append(Component.keybind("key.use", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))

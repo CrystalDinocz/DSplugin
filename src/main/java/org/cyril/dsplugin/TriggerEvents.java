@@ -3,6 +3,7 @@ package org.cyril.dsplugin;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -102,7 +103,7 @@ public class TriggerEvents implements Listener {
             }.runTaskTimer(Dsplugin.getInstance(), 3,0);
         }
     }
-    public void potionDrink(Player player, String potion) {
+    public void potionDrink(Player player, String potion, ItemStack itemStack) {
         if(!player.getScoreboardTags().contains("drinking")) {
             final int[] timer = {0};
             Location location = player.getLocation();
@@ -128,6 +129,7 @@ public class TriggerEvents implements Listener {
                                 player.setHealth(maxHP);
                                 player.sendMessage("Healed " + (maxHP - currHP));
                             }
+                            setFlaskCharges(itemStack, stats.get(player.getName() + "_crimsonFlasks").intValue(), "HP", 1);
                         }
                         if(potion.equals("cerulean")) {
                             float currFP = stats.get(player.getName() + "_FP");
@@ -140,6 +142,7 @@ public class TriggerEvents implements Listener {
                                 stats.put(player.getName() + "_FP", maxFP);
                                 player.sendMessage("Restored " + (maxFP - currFP));
                             }
+                            setFlaskCharges(itemStack, stats.get(player.getName() + "_ceruleanFlasks").intValue(), "HP", 1);
                             testInstance.showFP(player.getName());
                         }
                         cancel();
@@ -147,10 +150,31 @@ public class TriggerEvents implements Listener {
                 }
             };
             player.addScoreboardTag("drinking");
-            PotionEffect effect = new PotionEffect(PotionEffectType.SLOWNESS, 30, 4, true, true, false);
-            player.addPotionEffect(effect);
-            drinking.runTaskTimer(Dsplugin.getInstance(), 0, 0);
-            taskID.put(player.getName() + "_lastTask", drinking.getTaskId());
+            int flaskCharges = 0;
+            for(Component line : itemStack.getItemMeta().lore()) {
+                String string = ((TextComponent) line).content();
+                try {
+                    flaskCharges = Integer.parseInt(string);
+                } catch (NumberFormatException ignore) {
+                }
+            }
+            if(flaskCharges != 0) {
+                PotionEffect effect = new PotionEffect(PotionEffectType.SLOWNESS, 30, 4, true, true, false);
+                player.addPotionEffect(effect);
+                drinking.runTaskTimer(Dsplugin.getInstance(), 0, 0);
+                taskID.put(player.getName() + "_lastTask", drinking.getTaskId());
+            } else {
+                PotionEffect effect = new PotionEffect(PotionEffectType.SLOWNESS, 20, 4, true, true, false);
+                player.addPotionEffect(effect);
+                BukkitTask delay = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        player.removeScoreboardTag("drinking");
+                        player.sendMessage("This flask is empty.");
+                        player.playSound(player, Sound.ITEM_BOTTLE_FILL_DRAGONBREATH, 1, 1.2F);
+                    }
+                }.runTaskLater(Dsplugin.getInstance(), 20);
+            }
         }
     }
     public void uchigatana(Player player) {
@@ -585,6 +609,7 @@ public class TriggerEvents implements Listener {
         }
         player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
         stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
+        regenFlaskCharges(player);
         testInstance.showFP(player.getName());
         BukkitTask sitDelay = new BukkitRunnable() {
             @Override
@@ -699,6 +724,49 @@ public class TriggerEvents implements Listener {
                 }
                 if (item.getItemMeta().lore().getLast().equals(Component.text("Hammer", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
 
+                }
+            } catch (NullPointerException ignore) {
+            }
+        }
+    }
+    public void setFlaskCharges(ItemStack itemStack, Integer flaskAmount, String stat, Integer reduction) {
+        List<Component> Lore = new ArrayList<>();
+        Lore.add(Component.text("Rest at a site of grace to replenish.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        Lore.add(Component.text(""));
+        Lore.add(Component.text("Charges left", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        if(reduction == 0) {
+            Lore.add(Component.text(flaskAmount, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+        } else {
+            int flaskCharges = 0;
+            for(Component line : itemStack.getItemMeta().lore()) {
+                String string = ((TextComponent) line).content();
+                try {
+                    flaskCharges = Integer.parseInt(string);
+                } catch (NumberFormatException ignore) {
+                }
+            }
+            flaskCharges = flaskCharges - 1;
+            Lore.add(Component.text(flaskCharges, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+        }
+        Lore.add(Component.text(""));
+        Lore.add(Component.text("Press ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                .append(Component.keybind("key.use", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false))
+                .append(Component.text(" to restore " + stat, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC,false)));
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        itemMeta.lore(Lore);
+        itemStack.setItemMeta(itemMeta);
+    }
+    public void regenFlaskCharges(Player player) {
+        for(ItemStack itemStack : player.getInventory().getContents()) {
+            try {
+                String name = ((TextComponent) itemStack.getItemMeta().displayName()).content();
+                if(name.contains("Flask of Crimson Tears")) {
+                    int flaskAmount = stats.get(player.getName() + "_crimsonFlasks").intValue();
+                    setFlaskCharges(itemStack, flaskAmount, "HP", 0);
+                }
+                if(name.contains("Flask of Cerulean Tears")) {
+                    int flaskAmount = stats.get(player.getName() + "_ceruleanFlasks").intValue();
+                    setFlaskCharges(itemStack, flaskAmount, "MP", 0);
                 }
             } catch (NullPointerException ignore) {
             }
@@ -1793,11 +1861,11 @@ public class TriggerEvents implements Listener {
             if(event.hasItem()) {
                 try {
                     if (event.getItem().getItemMeta().displayName().equals(Component.text("Flask of Crimson Tears", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false))) {
-                        potionDrink(player, "crimson");
+                        potionDrink(player, "crimson", event.getItem());
                         event.setCancelled(true);
                     }
                     if (event.getItem().getItemMeta().displayName().equals(Component.text("Flask of Cerulean Tears", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC, false))) {
-                        potionDrink(player, "cerulean");
+                        potionDrink(player, "cerulean", event.getItem());
                         event.setCancelled(true);
                     }
                 } catch (NullPointerException ignore) {
@@ -1891,5 +1959,9 @@ public class TriggerEvents implements Listener {
             }
             Bukkit.broadcast(Component.text(entity.getAbsorptionAmount()));
         }
+    }
+    @EventHandler
+    public void onPlayerDrop(PlayerDropItemEvent event) {
+        event.setCancelled(true);
     }
 }
