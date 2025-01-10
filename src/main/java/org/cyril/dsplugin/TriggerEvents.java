@@ -104,6 +104,7 @@ public class TriggerEvents implements Listener {
         }
     }
     public void potionDrink(Player player, String potion, ItemStack itemStack) {
+        float flaskPotency = stats.get(player.getName() + "_flaskPotency");
         if(!player.getScoreboardTags().contains("drinking")) {
             final int[] timer = {0};
             Location location = player.getLocation();
@@ -121,7 +122,8 @@ public class TriggerEvents implements Listener {
                         if(potion.equals("crimson")) {
                             double currHP = player.getHealth();
                             double maxHP = player.getAttribute(Attribute.MAX_HEALTH).getBaseValue();
-                            double flaskHP = (double) 250 / 15;
+                            double flaskHP = getFlaskHP(flaskPotency);
+                            player.sendMessage(String.valueOf(flaskHP));
                             if(maxHP - currHP > flaskHP) {
                                 player.setHealth(currHP + flaskHP);
                                 player.sendMessage("Healed " + flaskHP);
@@ -134,7 +136,8 @@ public class TriggerEvents implements Listener {
                         if(potion.equals("cerulean")) {
                             float currFP = stats.get(player.getName() + "_FP");
                             float maxFP = stats.get(player.getName() + "_maxFP");
-                            int flaskFP = 80;
+                            float flaskFP = getFlaskFP(flaskPotency);
+                            player.sendMessage(String.valueOf(flaskFP));
                             if(maxFP - currFP > flaskFP) {
                                 stats.put(player.getName() + "_FP", currFP + flaskFP);
                                 player.sendMessage("Restored " + flaskFP);
@@ -609,7 +612,7 @@ public class TriggerEvents implements Listener {
         }
         player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
         stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
-        regenFlaskCharges(player);
+        alterFlaskMeta(player);
         testInstance.showFP(player.getName());
         BukkitTask sitDelay = new BukkitRunnable() {
             @Override
@@ -756,17 +759,34 @@ public class TriggerEvents implements Listener {
         itemMeta.lore(Lore);
         itemStack.setItemMeta(itemMeta);
     }
-    public void regenFlaskCharges(Player player) {
+    public void alterFlaskMeta(Player player) {
+        float flaskPotency = stats.get(player.getName() + "_flaskPotency");
         for(ItemStack itemStack : player.getInventory().getContents()) {
             try {
                 String name = ((TextComponent) itemStack.getItemMeta().displayName()).content();
                 if(name.contains("Flask of Crimson Tears")) {
                     int flaskAmount = stats.get(player.getName() + "_crimsonFlasks").intValue();
                     setFlaskCharges(itemStack, flaskAmount, "HP", 0);
+                    ItemMeta itemMeta = itemStack.getItemMeta();
+                    if (flaskPotency == 0) {
+                        itemMeta.displayName(Component.text("Flask of Crimson Tears", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false));
+                    } else {
+                        itemMeta.displayName(Component.text("Flask of Crimson Tears ", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("+" + (int) flaskPotency, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                    }
+                    itemStack.setItemMeta(itemMeta);
                 }
                 if(name.contains("Flask of Cerulean Tears")) {
                     int flaskAmount = stats.get(player.getName() + "_ceruleanFlasks").intValue();
                     setFlaskCharges(itemStack, flaskAmount, "MP", 0);
+                    ItemMeta itemMeta = itemStack.getItemMeta();
+                    if (flaskPotency == 0) {
+                        itemMeta.displayName(Component.text("Flask of Cerulean Tears", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC, false));
+                    } else {
+                        itemMeta.displayName(Component.text("Flask of Cerulean Tears ", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC, false)
+                                .append(Component.text("+" + (int) flaskPotency, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false)));
+                    }
+                    itemStack.setItemMeta(itemMeta);
                 }
             } catch (NullPointerException ignore) {
             }
@@ -809,6 +829,92 @@ public class TriggerEvents implements Listener {
             strScaling = (float) (67.5 + ((strLevel - 50) * 0.8));
         }
         return strScaling;
+    }
+    private static double getFlaskHP(float flaskPotency) {
+        double flaskHP = 0;
+        if(flaskPotency == 0) {
+            flaskHP = (double) 250 / 15;
+        }
+        if(flaskPotency == 1) {
+            flaskHP = (double) 345 / 15;
+        }
+        if(flaskPotency == 2) {
+            flaskHP = (double) 430 / 15;
+        }
+        if(flaskPotency == 3) {
+            flaskHP = (double) 505 / 15;
+        }
+        if(flaskPotency == 4) {
+            flaskHP = (double) 570 / 15;
+        }
+        if(flaskPotency == 5) {
+            flaskHP = (double) 625 / 15;
+        }
+        if(flaskPotency == 6) {
+            flaskHP = (double) 670 / 15;
+        }
+        if(flaskPotency == 7) {
+            flaskHP = (double) 700 / 15;
+        }
+        if(flaskPotency == 8) {
+            flaskHP = (double) 730 / 15;
+        }
+        if(flaskPotency == 9) {
+            flaskHP = (double) 755 / 15;
+        }
+        if(flaskPotency == 10) {
+            flaskHP = (double) 780 / 15;
+        }
+        if(flaskPotency == 11) {
+            flaskHP = (double) 795 / 15;
+        }
+        if(flaskPotency == 12) {
+            flaskHP = (double) 810 / 15;
+        }
+        return flaskHP;
+    }
+    private static float getFlaskFP(float flaskPotency) {
+        float flaskFP = 0;
+        if(flaskPotency == 0) {
+            flaskFP = 80;
+        }
+        if(flaskPotency == 1) {
+            flaskFP = 95;
+        }
+        if(flaskPotency == 2) {
+            flaskFP = 110;
+        }
+        if(flaskPotency == 3) {
+            flaskFP = 125;
+        }
+        if(flaskPotency == 4) {
+            flaskFP = 140;
+        }
+        if(flaskPotency == 5) {
+            flaskFP = 150;
+        }
+        if(flaskPotency == 6) {
+            flaskFP = 160;
+        }
+        if(flaskPotency == 7) {
+            flaskFP = 170;
+        }
+        if(flaskPotency == 8) {
+            flaskFP = 180;
+        }
+        if(flaskPotency == 9) {
+            flaskFP = 190;
+        }
+        if(flaskPotency == 10) {
+            flaskFP = 200;
+        }
+        if(flaskPotency == 11) {
+            flaskFP = 210;
+        }
+        if(flaskPotency == 12) {
+            flaskFP = 220;
+        }
+        return flaskFP;
     }
     public void addRunes(Player player) {
         float runesHeld = stats.get(player.getName() + "_runesHeld");
@@ -1229,6 +1335,7 @@ public class TriggerEvents implements Listener {
         player.setExperienceLevelAndProgress(0);
         player.setLevel(stats.get(player.getName() + "_level").intValue());
         setItemLore(player, player.getInventory());
+
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {
@@ -1860,11 +1967,11 @@ public class TriggerEvents implements Listener {
         if(event.getAction().isRightClick()) {
             if(event.hasItem()) {
                 try {
-                    if (event.getItem().getItemMeta().displayName().equals(Component.text("Flask of Crimson Tears", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false))) {
+                    if (((TextComponent) event.getItem().getItemMeta().displayName()).content().contains("Flask of Crimson Tears")) {
                         potionDrink(player, "crimson", event.getItem());
                         event.setCancelled(true);
                     }
-                    if (event.getItem().getItemMeta().displayName().equals(Component.text("Flask of Cerulean Tears", NamedTextColor.BLUE).decoration(TextDecoration.ITALIC, false))) {
+                    if (((TextComponent) event.getItem().getItemMeta().displayName()).content().contains("Flask of Cerulean Tears")) {
                         potionDrink(player, "cerulean", event.getItem());
                         event.setCancelled(true);
                     }
