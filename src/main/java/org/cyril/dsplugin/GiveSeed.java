@@ -24,13 +24,22 @@ public class GiveSeed extends Command {
         if(commandSender instanceof Player) {
             Player player = (Player) commandSender;
             ItemStack goldenSeed = new ItemStack(Material.SUNFLOWER);
-            List<Component> seedLore = new ArrayList<>();
+            List<Component> Lore = new ArrayList<>();
             ItemMeta seedMeta = goldenSeed.getItemMeta();
             seedMeta.displayName(Component.text("Golden Seed", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC,false));
-            seedLore.add(Component.text("Increases a Sacred Flask's number of uses.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-            seedMeta.lore(seedLore);
+            Lore.add(Component.text("Increases a Sacred Flask's number of uses.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            seedMeta.lore(Lore);
+            Lore.clear();
             goldenSeed.setItemMeta(seedMeta);
             player.getInventory().setItem(player.getInventory().firstEmpty(), goldenSeed);
+            ItemStack sacredTear = new ItemStack(Material.DRAGON_BREATH);
+            ItemMeta tearMeta = sacredTear.getItemMeta();
+            tearMeta.displayName(Component.text("Sacred Tear", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+            Lore.add(Component.text("Increases the potency of a Sacred Flask's restorative effects.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            tearMeta.lore(Lore);
+            Lore.clear();
+            sacredTear.setItemMeta(tearMeta);
+            player.getInventory().setItem(player.getInventory().firstEmpty(), sacredTear);
         } else {
             commandSender.sendMessage("Only players can use this command");
         }

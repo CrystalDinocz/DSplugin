@@ -1515,12 +1515,41 @@ public class TriggerEvents implements Listener {
                         grace(player);
                         flaskMenu(player);
                     }
-                    if (event.getCurrentItem().getType().equals(Material.BLAZE_POWDER)) {
+                    if(event.getCurrentItem().getType().equals(Material.DRAGON_BREATH)) {
+                        ItemStack sacredTear = new ItemStack(Material.DRAGON_BREATH);
+                        List<Component> tearLore = new ArrayList<>();
+                        ItemMeta tearMeta = sacredTear.getItemMeta();
+                        tearMeta.displayName(Component.text("Sacred Tear", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+                        tearLore.add(Component.text("Increases the potency of a Sacred Flask's restorative effects.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+                        tearMeta.lore(tearLore);
+                        sacredTear.setItemMeta(tearMeta);
+                        if(stats.get(player.getName() + "_flaskPotency") >= 12) {
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                            player.sendMessage(Component.text("You can't increase the potency of Sacred Flasks any further.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                        } else {
+                            if (player.getInventory().containsAtLeast(sacredTear, 1)) {
+                                player.removeScoreboardTag("flaskPotency_" + stats.get(player.getName() + "_flaskPotency"));
+                                stats.put(player.getName() + "_flaskPotency", (stats.get(player.getName() + "_flaskPotency") + 1));
+                                player.addScoreboardTag("flaskPotency_" + stats.get(player.getName() + "_flaskPotency"));
+                                sacredTear.setAmount(1);
+                                player.getInventory().removeItem(sacredTear);
+                            } else {
+                                player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                                player.sendMessage(Component.text("Not enough Sacred Tears.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+                            }
+                        }
                         grace(player);
-                        allocateMenu(player);
+                        flaskMenu(player);
                     }
                 } catch (NullPointerException ignore) {
                 }
+            }
+            try {
+                if (event.getCurrentItem().getType().equals(Material.BLAZE_POWDER)) {
+                    grace(player);
+                    allocateMenu(player);
+                }
+            } catch (NullPointerException ignore) {
             }
         }
         if(event.getInventory().contains(graceCheck3)) {
@@ -1574,9 +1603,11 @@ public class TriggerEvents implements Listener {
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
                             testInstance.setMaxHP(player.getName());
                         } else {
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
                     } else {
+                        player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                         player.sendMessage(Component.text("Vigor is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
@@ -1600,9 +1631,11 @@ public class TriggerEvents implements Listener {
                             testInstance.setMaxStamina(player.getName());
                             testInstance.staminaRegen(player.getName());
                         } else {
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
                     } else {
+                        player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                         player.sendMessage(Component.text("Endurance is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
@@ -1626,9 +1659,11 @@ public class TriggerEvents implements Listener {
                             testInstance.setMaxFP(player.getName());
                             testInstance.showFP(player.getName());
                         } else {
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
                     } else {
+                        player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                         player.sendMessage(Component.text("Mind is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
@@ -1650,9 +1685,11 @@ public class TriggerEvents implements Listener {
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
                         } else {
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
                     } else {
+                        player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                         player.sendMessage(Component.text("Strength is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
@@ -1674,9 +1711,11 @@ public class TriggerEvents implements Listener {
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
                         } else {
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
                     } else {
+                        player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                         player.sendMessage(Component.text("Dexterity is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
@@ -1698,9 +1737,11 @@ public class TriggerEvents implements Listener {
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
                         } else {
-                            player.sendMessage(Component.text("You don't have enough runes.", NamedTextColor.RED));
+                            player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
+                            player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
                         }
                     } else {
+                        player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                         player.sendMessage(Component.text("Intelligence is already at the maximum level.", NamedTextColor.RED));
                     }
                 }
