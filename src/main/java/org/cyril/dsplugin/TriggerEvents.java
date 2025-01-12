@@ -3,7 +3,6 @@ package org.cyril.dsplugin;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -1069,7 +1068,12 @@ public class TriggerEvents implements Listener {
                         player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 1F);
                         player.playSound(player, Sound.ENTITY_WITHER_BREAK_BLOCK, 1F, 1.5F);
                         player.swingMainHand();
-                        entity.setHealth(entity.getHealth() - critDamage);
+                        if (entity.getHealth() <= critDamage) {
+                            entity.setHealth(0.01);
+                        } else {
+                            entity.setHealth(entity.getHealth() - critDamage);
+                        }
+                        displayEntityHP(entity, 0);
                         entity.broadcastHurtAnimation(collection);
                         player.sendMessage("Riposte 1 " + critDamage);
                     }
@@ -1077,7 +1081,12 @@ public class TriggerEvents implements Listener {
                         player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 0.5F);
                         player.playSound(player, Sound.ENTITY_WITHER_BREAK_BLOCK, 1F, 1F);
                         player.swingMainHand();
-                        entity.setHealth(entity.getHealth() - Math.round(critDamage / 4));
+                        if (entity.getHealth() <= Math.round(critDamage / 4)) {
+                            entity.setHealth(0.01);
+                        } else {
+                            entity.setHealth(entity.getHealth() - critDamage);
+                        };
+                        displayEntityHP(entity, 0);
                         entity.broadcastHurtAnimation(collection);
                         player.sendMessage("Riposte 2 " + Math.round(critDamage / 4));
                         entity.setGravity(true);
@@ -1088,12 +1097,43 @@ public class TriggerEvents implements Listener {
                         player.removeScoreboardTag("dying");
                         entity.removeScoreboardTag("iframe");
                         player.sendMessage(entity.getHealth() + "/" + entity.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
+                        if(entity.getHealth() <= 0.01) {
+                            entity.setAI(false);
+                            entity.getWorld().playSound(entity.getLocation(), entity.getDeathSound(), 1, 1);
+                            entity.broadcastHurtAnimation(collection);
+                            BukkitTask deathDelay = new BukkitRunnable() {
+                                @Override
+                                public void run() {
+                                    String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+                                    List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                                    for(Entity entity1 : players) {
+                                        Player player1 = (Player) entity1;
+                                        addRunes(player1);
+                                        player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                        player1.setExp(0);
+                                    }
+                                    entity.remove();
+                                }
+                            }.runTaskLater(Dsplugin.getInstance(), 10);
+                        }
                         cancel();
                     }
                     timer[0]++;
                     player.teleport(riposteLocation);
                 }
             }.runTaskTimer(Dsplugin.getInstance(),0,0);
+        }
+    }
+    public void displayEntityHP(LivingEntity entity, double modifier) {
+        if(!entity.isDead()) {
+            String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+            List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+            for (Entity entity1 : players) {
+                Player player1 = (Player) entity1;
+                double currHP = entity.getHealth() - modifier;
+                float expProgress = (float) (currHP / entity.getAttribute(Attribute.MAX_HEALTH).getValue());
+                player1.setExp(expProgress);
+            }
         }
     }
     @EventHandler
@@ -1176,10 +1216,22 @@ public class TriggerEvents implements Listener {
                 event.setCancelled(true);
                 return;
             }
+            if(event.getEntity() instanceof LivingEntity && !event.getEntity().getType().equals(EntityType.ARMOR_STAND)) {
+                LivingEntity entity = (LivingEntity) event.getEntity();
+                displayEntityHP(entity, event.getFinalDamage());
+            }
             if(event.getDamageSource().getCausingEntity() instanceof Player) {
                 Player player = (Player) event.getDamageSource().getCausingEntity();
                 event.setCancelled(true);
                 if(player.getGameMode().equals(GameMode.CREATIVE) && player.isOp()) {
+                    String selector = String.format("@p[tag=hurt_%s]", event.getEntity().getUniqueId().toString());
+                    List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                    for(Entity entity1 : players) {
+                        Player player1 = (Player) entity1;
+                        addRunes(player1);
+                        player1.removeScoreboardTag("hurt_" + event.getEntity().getUniqueId().toString());
+                        player1.setExp(0);
+                    }
                     event.getEntity().remove();
                     return;
                 }
@@ -1235,8 +1287,18 @@ public class TriggerEvents implements Listener {
                             player.sendMessage("Total Damage " + finalDamage);
                             if(event.getEntity() instanceof LivingEntity) {
                                 LivingEntity entity = (LivingEntity) event.getEntity();
+                                if(!player.getScoreboardTags().contains("hurt_" + entity.getUniqueId().toString())) {
+                                    player.addScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                }
                                 if(finalDamage >= entity.getHealth()) {
-                                    addRunes(player);
+                                    String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+                                    List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                                    for(Entity entity1 : players) {
+                                        Player player1 = (Player) entity1;
+                                        addRunes(player1);
+                                        player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                        player1.setExp(0);
+                                    }
                                 }
                                 entity.damage(finalDamage);
                             }
@@ -1317,6 +1379,15 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        List<String> aggroTags = new ArrayList<>();
+        for(String tag : player.getScoreboardTags()) {
+            if(tag.contains("hurt_")) {
+                aggroTags.add(tag);
+            }
+        }
+        if (!aggroTags.isEmpty()) {
+            player.teleport(player.getRespawnLocation());
+        }
         if(player.getScoreboardTags().contains("reset")) {
             player.getScoreboardTags().clear();
         }
@@ -1335,7 +1406,6 @@ public class TriggerEvents implements Listener {
         player.setExperienceLevelAndProgress(0);
         player.setLevel(stats.get(player.getName() + "_level").intValue());
         setItemLore(player, player.getInventory());
-
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {
@@ -1357,6 +1427,16 @@ public class TriggerEvents implements Listener {
                     graceDiscovered(player);
                     player.addScoreboardTag("discovered_" + String.join("_", stringList));
                 } else {
+                    List<String> aggroTags = new ArrayList<>();
+                    for(String tag : player.getScoreboardTags()) {
+                        if(tag.contains("hurt_")) {
+                            aggroTags.add(tag);
+                        }
+                    }
+                    for(String tag : aggroTags) {
+                        player.removeScoreboardTag(tag);
+                    }
+                    aggroTags.clear();
                     baseLocation.put(player.getName(), player.getLocation());
                     grace(player);
                     mainMenu(player);
@@ -1969,6 +2049,16 @@ public class TriggerEvents implements Listener {
                     if(player.getScoreboardTags().contains("deadTorrent")) {
                         player.removeScoreboardTag("deadTorrent");
                     }
+                    List<String> aggroTags = new ArrayList<>();
+                    for(String tag : player.getScoreboardTags()) {
+                        if(tag.contains("hurt_")) {
+                            aggroTags.add(tag);
+                        }
+                    }
+                    for(String tag : aggroTags) {
+                        player.removeScoreboardTag(tag);
+                    }
+                    player.setExp(0);
                 }
             }.runTaskLater(Dsplugin.getInstance(), 115);
             //Rune Loss
