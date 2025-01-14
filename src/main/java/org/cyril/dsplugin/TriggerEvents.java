@@ -613,18 +613,15 @@ public class TriggerEvents implements Listener {
         stats.put(player.getName() + "_FP", stats.get(player.getName() + "_maxFP"));
         alterFlaskMeta(player);
         testInstance.showFP(player.getName());
-        BukkitTask sitDelay = new BukkitRunnable() {
-            @Override
-            public void run() {
-                Location sitLocation = baseLocation.get(player.getName()).clone();
-                sitLocation.subtract(0,1.9,0);
-                Entity graceSit = player.getWorld().spawnEntity(sitLocation, EntityType.ARMOR_STAND);
-                graceSit.addScoreboardTag(player.getName() + "_sit");
-                graceSit.setGravity(false);
-                graceSit.setInvisible(true);
-                graceSit.addPassenger(player);
-            }
-        }.runTaskLater(Dsplugin.getInstance(), 0);
+        if(player.getOpenInventory().getTopInventory().isEmpty()) {
+            Location sitLocation = baseLocation.get(player.getName()).clone();
+            sitLocation.subtract(0, 1.9, 0);
+            Entity graceSit = player.getWorld().spawnEntity(sitLocation, EntityType.ARMOR_STAND);
+            graceSit.addScoreboardTag(player.getName() + "_sit");
+            graceSit.setGravity(false);
+            graceSit.setInvisible(true);
+            graceSit.addPassenger(player);
+        }
     }
     public void graceTravel(Player player, InventoryClickEvent event) {
         ItemStack graceItem = event.getCurrentItem();
@@ -1084,7 +1081,7 @@ public class TriggerEvents implements Listener {
                         if (entity.getHealth() <= Math.round(critDamage / 4)) {
                             entity.setHealth(0.01);
                         } else {
-                            entity.setHealth(entity.getHealth() - critDamage);
+                            entity.setHealth(entity.getHealth() - Math.round(critDamage / 4));
                         };
                         displayEntityHP(entity, 0);
                         entity.broadcastHurtAnimation(collection);
@@ -1285,10 +1282,11 @@ public class TriggerEvents implements Listener {
                                 }
                             }
                             player.sendMessage("Total Damage " + finalDamage);
-                            if(event.getEntity() instanceof LivingEntity) {
+                            if(event.getEntity() instanceof LivingEntity && !event.getEntity().getType().equals(EntityType.ARMOR_STAND)) {
                                 LivingEntity entity = (LivingEntity) event.getEntity();
                                 if(!player.getScoreboardTags().contains("hurt_" + entity.getUniqueId().toString())) {
                                     player.addScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                    player.sendMessage("a");
                                 }
                                 if(finalDamage >= entity.getHealth()) {
                                     String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
@@ -1473,10 +1471,17 @@ public class TriggerEvents implements Listener {
         smithingCheck.setItemMeta(smithingMeta);
         if(event.getInventory().contains(graceCheck) || event.getInventory().contains(graceCheck2) || event.getInventory().contains(graceCheck3) || event.getInventory().contains(graceCheck4) || event.getInventory().contains(graceCheck5)) {
             player.setLevel(stats.get(player.getName() + "_level").intValue());
-            String selector = String.format("@e[tag=%s_sit]", event.getPlayer().getName());
-            for(Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
-                entity.remove();
-            }
+            BukkitTask delay = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if(player.getOpenInventory().getTopInventory().isEmpty()) {
+                        String selector = String.format("@e[tag=%s_sit]", event.getPlayer().getName());
+                        for (Entity entity : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
+                            entity.remove();
+                        }
+                    }
+                }
+            }.runTaskLater(Dsplugin.getInstance(), 1);
         }
         if(event.getInventory().contains(smithingCheck)) {
             if(player.getScoreboardTags().contains("upgrading")) {
@@ -1532,6 +1537,7 @@ public class TriggerEvents implements Listener {
                                 player.removeScoreboardTag("ceruleanFlasks_" + stats.get(player.getName() + "_ceruleanFlasks"));
                                 stats.put(player.getName() + "_ceruleanFlasks", (stats.get(player.getName() + "_ceruleanFlasks") - 1));
                                 player.addScoreboardTag("ceruleanFlasks_" + stats.get(player.getName() + "_ceruleanFlasks"));
+                                player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                             } else {
                                 player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                                 player.sendMessage(Component.text("You can't allocate any more charges to this flask.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
@@ -1545,6 +1551,7 @@ public class TriggerEvents implements Listener {
                                 player.removeScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
                                 stats.put(player.getName() + "_crimsonFlasks", (stats.get(player.getName() + "_crimsonFlasks") - 1));
                                 player.addScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
+                                player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                             } else {
                                 player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                                 player.sendMessage(Component.text("You can't allocate any more charges to this flask.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
@@ -1584,6 +1591,7 @@ public class TriggerEvents implements Listener {
                                 player.addScoreboardTag("crimsonFlasks_" + stats.get(player.getName() + "_crimsonFlasks"));
                                 goldenSeed.setAmount(flaskCost);
                                 player.getInventory().removeItem(goldenSeed);
+                                player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                             } else {
                                 player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                                 player.sendMessage(Component.text("Not enough Golden Seeds.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
@@ -1613,6 +1621,7 @@ public class TriggerEvents implements Listener {
                                 player.addScoreboardTag("flaskPotency_" + stats.get(player.getName() + "_flaskPotency"));
                                 sacredTear.setAmount(1);
                                 player.getInventory().removeItem(sacredTear);
+                                player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                             } else {
                                 player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                                 player.sendMessage(Component.text("Not enough Sacred Tears.", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
@@ -1628,6 +1637,7 @@ public class TriggerEvents implements Listener {
                 if (event.getCurrentItem().getType().equals(Material.BLAZE_POWDER)) {
                     grace(player);
                     allocateMenu(player);
+                    player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                 }
             } catch (NullPointerException ignore) {
             }
@@ -1649,14 +1659,17 @@ public class TriggerEvents implements Listener {
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Travel", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false))) {
                     grace(player);
                     travelMenu(player);
+                    player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Level Up", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false))) {
                     grace(player);
                     levelMenu(player);
+                    player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                 }
                 if(event.getCurrentItem().getItemMeta().displayName().equals(Component.text("Sacred Flasks", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false))) {
                     grace(player);
                     flaskMenu(player);
+                    player.playSound(player, Sound.BLOCK_LEVER_CLICK, 1, 2);
                 }
             } catch (NullPointerException ignore) {
             }
@@ -1682,6 +1695,7 @@ public class TriggerEvents implements Listener {
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
                             testInstance.setMaxHP(player.getName());
+                            player.playSound(player, Sound.BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED, 1, 1);
                         } else {
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
@@ -1710,6 +1724,7 @@ public class TriggerEvents implements Listener {
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
                             testInstance.setMaxStamina(player.getName());
                             testInstance.staminaRegen(player.getName());
+                            player.playSound(player, Sound.BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED, 1, 1);
                         } else {
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
@@ -1738,6 +1753,7 @@ public class TriggerEvents implements Listener {
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
                             testInstance.setMaxFP(player.getName());
                             testInstance.showFP(player.getName());
+                            player.playSound(player, Sound.BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED, 1, 1);
                         } else {
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
@@ -1764,6 +1780,7 @@ public class TriggerEvents implements Listener {
                             player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            player.playSound(player, Sound.BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED, 1, 1);
                         } else {
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
@@ -1790,6 +1807,7 @@ public class TriggerEvents implements Listener {
                             player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            player.playSound(player, Sound.BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED, 1, 1);
                         } else {
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
@@ -1816,6 +1834,7 @@ public class TriggerEvents implements Listener {
                             player.addScoreboardTag("level_" + stats.get(player.getName() + "_level"));
                             testInstance.setRunesNeeded(player.getName());
                             player.addScoreboardTag("runesNeeded_" + stats.get(player.getName() + "_runesNeeded"));
+                            player.playSound(player, Sound.BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED, 1, 1);
                         } else {
                             player.playSound(player, Sound.ENTITY_VILLAGER_NO, 1F, 0.8F);
                             player.sendMessage(Component.text("Not enough runes.", NamedTextColor.RED));
