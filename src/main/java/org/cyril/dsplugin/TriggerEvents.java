@@ -951,6 +951,10 @@ public class TriggerEvents implements Listener {
                 Float lastValue = Float.valueOf(tag.replace("intelligence_", ""));
                 stats.put(player.getName() + "_intelligence", lastValue);
             }
+            if(tag.contains("level_")) {
+                Float lastValue = Float.valueOf(tag.replace("level_", ""));
+                stats.put(player.getName() + "_level", lastValue);
+            }
             if(tag.contains("runesHeld_")) {
                 Float lastValue = Float.valueOf(tag.replace("runesHeld_", ""));
                 stats.put(player.getName() + "_runesHeld", lastValue);
