@@ -19,6 +19,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -1443,6 +1444,13 @@ public class TriggerEvents implements Listener {
                     grace(player);
                     mainMenu(player);
                 }
+            } else if (event.getRightClicked().getScoreboardTags().contains("itemDrop")) {
+                event.setCancelled(true);
+                ArmorStand armorStand = (ArmorStand) event.getRightClicked();
+                ItemStack itemStack = armorStand.getItem(EquipmentSlot.CHEST);
+                player.getInventory().setItem(player.getInventory().firstEmpty(), itemStack);
+                player.playSound(player, Sound.ITEM_ARMOR_EQUIP_LEATHER, 1, 0.6F);
+                event.getRightClicked().remove();
             }
         }
     }
