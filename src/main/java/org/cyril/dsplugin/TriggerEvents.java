@@ -1226,15 +1226,35 @@ public class TriggerEvents implements Listener {
                 Player player = (Player) event.getDamageSource().getCausingEntity();
                 event.setCancelled(true);
                 if(player.getGameMode().equals(GameMode.CREATIVE) && player.isOp()) {
-                    String selector = String.format("@p[tag=hurt_%s]", event.getEntity().getUniqueId().toString());
-                    List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
-                    for(Entity entity1 : players) {
-                        Player player1 = (Player) entity1;
-                        addRunes(player1);
-                        player1.removeScoreboardTag("hurt_" + event.getEntity().getUniqueId().toString());
-                        player1.setExp(0);
+                    if(event.getEntity().getType().equals(EntityType.INTERACTION)) {
+                        if(event.getEntity().getScoreboardTags().contains("interaction")) {
+                            String uuid = "";
+                            for (String tag : event.getEntity().getScoreboardTags()) {
+                                if (tag.contains("hitBox_")) {
+                                    uuid = tag.replace("hitBox_", "");
+                                }
+                            }
+                            player.sendMessage(uuid);
+                            Entity entity = Bukkit.getEntity(UUID.fromString(uuid));
+                            player.sendMessage(entity.getType().toString());
+                            if(taskID.containsKey("entity_" + uuid)) {
+                                Bukkit.getScheduler().cancelTask(taskID.get("entity_" + uuid));
+                            }
+                            event.getEntity().remove();
+                            String command = String.format("execute as %s run function animated_java:testmodel/animations/animation_model_death/play", "@e[tag=tag_" + uuid + "]");
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                        }
+                    } else {
+                        String selector = String.format("@p[tag=hurt_%s]", event.getEntity().getUniqueId().toString());
+                        List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                        for (Entity entity1 : players) {
+                            Player player1 = (Player) entity1;
+                            addRunes(player1);
+                            player1.removeScoreboardTag("hurt_" + event.getEntity().getUniqueId().toString());
+                            player1.setExp(0);
+                        }
+                        event.getEntity().remove();
                     }
-                    event.getEntity().remove();
                     return;
                 }
                 if(player.getScoreboardTags().contains("dying") || player.getScoreboardTags().contains("iframe")) {
@@ -2216,6 +2236,24 @@ public class TriggerEvents implements Listener {
     }
     @EventHandler
     public void onEntitySpawn(EntitySpawnEvent event) {
+        if(event.getEntity().getType().equals(EntityType.ITEM_DISPLAY)) {
+            Entity entity = event.getEntity();
+            String uuid = entity.getUniqueId().toString();
+            entity.addScoreboardTag("tag_" + uuid);
+            Interaction hitBox = (Interaction) entity.getWorld().spawnEntity(entity.getLocation(), EntityType.INTERACTION);
+            hitBox.addScoreboardTag("hitBox_" + uuid);
+            hitBox.addScoreboardTag("interaction");
+            hitBox.setInteractionHeight(2);
+            hitBox.setInteractionWidth(1);
+            hitBox.setGravity(false);
+            BukkitTask repeat = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    hitBox.teleport(entity);
+                }
+            }.runTaskTimer(Dsplugin.getInstance(), 1,1);
+            taskID.put("entity_" + uuid, repeat.getTaskId());
+        }
         if(event.getEntity() instanceof LivingEntity && !event.getEntity().getType().equals(EntityType.ARMOR_STAND)) {
             LivingEntity entity = (LivingEntity) event.getEntity();
             String uuid = entity.getUniqueId().toString();
