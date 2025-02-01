@@ -1237,11 +1237,9 @@ public class TriggerEvents implements Listener {
                             player.sendMessage(uuid);
                             Entity entity = Bukkit.getEntity(UUID.fromString(uuid));
                             player.sendMessage(entity.getType().toString());
-                            if(taskID.containsKey("entity_" + uuid)) {
-                                Bukkit.getScheduler().cancelTask(taskID.get("entity_" + uuid));
-                            }
                             event.getEntity().remove();
-                            String command = String.format("execute as %s run function animated_java:testmodel/animations/animation_model_death/play", "@e[tag=tag_" + uuid + "]");
+                            entity.remove();
+                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_death/play", uuid);
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                         }
                     } else {
@@ -2236,35 +2234,23 @@ public class TriggerEvents implements Listener {
     }
     @EventHandler
     public void onEntitySpawn(EntitySpawnEvent event) {
-        if(event.getEntity().getType().equals(EntityType.ITEM_DISPLAY)) {
-            Entity entity = event.getEntity();
-            String uuid = entity.getUniqueId().toString();
-            entity.addScoreboardTag("tag_" + uuid);
-            Interaction hitBox = (Interaction) entity.getWorld().spawnEntity(entity.getLocation(), EntityType.INTERACTION);
-            hitBox.addScoreboardTag("hitBox_" + uuid);
-            hitBox.addScoreboardTag("interaction");
-            hitBox.setInteractionHeight(2);
-            hitBox.setInteractionWidth(1);
-            hitBox.setGravity(false);
-            BukkitTask repeat = new BukkitRunnable() {
-                @Override
-                public void run() {
-                    hitBox.teleport(entity);
-                }
-            }.runTaskTimer(Dsplugin.getInstance(), 1,1);
-            taskID.put("entity_" + uuid, repeat.getTaskId());
-        }
         if(event.getEntity() instanceof LivingEntity && !event.getEntity().getType().equals(EntityType.ARMOR_STAND)) {
             LivingEntity entity = (LivingEntity) event.getEntity();
             String uuid = entity.getUniqueId().toString();
-            entity.addScoreboardTag("maxPoise_80");
-            stats.put(uuid + "_maxPoise", 80F);
-            stats.put(uuid + "_poise", 80F);
+            if(entity.getScoreboardTags().contains("namelessKing")) {
+                entity.setInvisible(true);
+                stats.put(uuid + "_maxPoise", 215F);
+                stats.put(uuid + "_poise", 215F);
+                Bukkit.broadcast(Component.text(entity.getScoreboardTags().toString()));
+            } else {
+                entity.addScoreboardTag("maxPoise_80");
+                stats.put(uuid + "_maxPoise", 80F);
+                stats.put(uuid + "_poise", 80F);
+            }
             if(entity.getType().equals(EntityType.IRON_GOLEM)) {
                 entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20000);
                 entity.setHealth(20000);
             }
-            Bukkit.broadcast(Component.text(entity.getAbsorptionAmount()));
         }
     }
     @EventHandler
