@@ -1,5 +1,6 @@
 package org.cyril.dsplugin;
 
+import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -913,14 +914,14 @@ public class TriggerEvents implements Listener {
         }
         return flaskFP;
     }
-    public void addRunes(Player player) {
+    public void addRunes(Player player, int runesGiven) {
         float runesHeld = stats.get(player.getName() + "_runesHeld");
-        float runesGiven = 10000;
         if(player.getScoreboardTags().contains("runesHeld_" + runesHeld)) {
             player.removeScoreboardTag("runesHeld_" + runesHeld);
         }
         stats.put(player.getName() + "_runesHeld", runesHeld + runesGiven);
         player.addScoreboardTag("runesHeld_" + stats.get(player.getName() + "_runesHeld"));
+        player.sendActionBar(Component.text("+ 💮 " + runesGiven,NamedTextColor.GOLD));
     }
     public void storeValues(Player player) {
         for(String tag : player.getScoreboardTags()) {
@@ -1020,6 +1021,13 @@ public class TriggerEvents implements Listener {
         Location riposteLocation = entity.getEyeLocation();
         riposteLocation.setY((entity.getLocation().getY() + riposteLocation.getY()) / 2);
         riposteLocation.subtract(0,0.5,0);
+        if(entity.getScoreboardTags().contains("namelessKing")) {
+            String command1 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_swing/stop", uuid);
+            String command2 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_walk/stop", uuid);
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command1);
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command2);
+            riposteLocation.setY(entity.getLocation().getY() + 1);
+        }
         Vector direction = entity.getLocation().getDirection();
         direction.setY(0);
         direction.normalize();
@@ -1041,7 +1049,7 @@ public class TriggerEvents implements Listener {
                     Bukkit.broadcast(Component.text("Stance Regained"));
                 }
             }
-        }.runTaskLater(Dsplugin.getInstance(), 120);
+        }.runTaskLater(Dsplugin.getInstance(), 90);
     }
     public void riposteAttack(Entity riposte, Player player, String tag, Double baseDamage) {
         String uuid = tag.replace("riposte_", "");
@@ -1061,7 +1069,6 @@ public class TriggerEvents implements Listener {
             entityDirection.normalize();
             riposteLocation.add(entityDirection);
             riposteLocation.setDirection(entityDirection.rotateAroundY(Math.PI));
-            player.sendMessage(entity.getHealth() + "/" + entity.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
             Collection<Player> collection = new ArrayList<>(Bukkit.getOnlinePlayers());
             BukkitTask riposteAnimation = new BukkitRunnable() {
                 @Override
@@ -1077,7 +1084,6 @@ public class TriggerEvents implements Listener {
                         }
                         displayEntityHP(entity, 0);
                         entity.broadcastHurtAnimation(collection);
-                        player.sendMessage("Riposte 1 " + critDamage);
                     }
                     if(timer[0] == 45) {
                         player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 0.5F);
@@ -1090,7 +1096,6 @@ public class TriggerEvents implements Listener {
                         };
                         displayEntityHP(entity, 0);
                         entity.broadcastHurtAnimation(collection);
-                        player.sendMessage("Riposte 2 " + Math.round(critDamage / 4));
                         entity.setGravity(true);
                         entity.setAI(true);
                         entity.setVelocity(player.getLocation().getDirection().multiply(0.8));
@@ -1098,7 +1103,6 @@ public class TriggerEvents implements Listener {
                     if(timer[0] == 60) {
                         player.removeScoreboardTag("dying");
                         entity.removeScoreboardTag("iframe");
-                        player.sendMessage(entity.getHealth() + "/" + entity.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
                         if(entity.getHealth() <= 0.01) {
                             entity.setAI(false);
                             entity.getWorld().playSound(entity.getLocation(), entity.getDeathSound(), 1, 1);
@@ -1110,7 +1114,7 @@ public class TriggerEvents implements Listener {
                                     List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                                     for(Entity entity1 : players) {
                                         Player player1 = (Player) entity1;
-                                        addRunes(player1);
+                                        addRunes(player1, 10000);
                                         player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
                                         player1.setExp(0);
                                     }
@@ -1131,12 +1135,77 @@ public class TriggerEvents implements Listener {
             String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
             List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
             for (Entity entity1 : players) {
-                Player player1 = (Player) entity1;
+                Player player = (Player) entity1;
                 double currHP = entity.getHealth() - modifier;
                 float expProgress = (float) (currHP / entity.getAttribute(Attribute.MAX_HEALTH).getValue());
-                player1.setExp(expProgress);
+                player.setExp(expProgress);
             }
         }
+    }
+    public void displayBossHP(Entity entity, Integer health, Integer maxHealth) {
+        String selector = String.format("@e[tag=hurt_%s]", entity.getUniqueId());
+        for(Entity entity1 : Bukkit.selectEntities(Bukkit.getConsoleSender(), selector)) {
+            Player player = (Player) entity1;
+            float expProgress = ((float) health / (float) maxHealth);
+            player.setExp(expProgress);
+        }
+    }
+    public void staminaCost(Entity entity, Player player) {
+        String uuid = entity.getUniqueId().toString();
+        float entityPoise = stats.get(uuid + "_poise");
+        if(((TextComponent) player.getInventory().getItemInMainHand().getItemMeta().displayName()).content().equals("Stance Breaker")) {
+            if(!entity.getScoreboardTags().contains("stanceBroken")) {
+                stats.put(uuid + "_poise", 0F);
+            }
+        }
+        if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Straight Sword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
+            stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
+        }
+        if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Greatsword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
+            stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
+        }
+        if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
+            if(player.getFallDistance() != 0) {
+                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
+                if(!entity.getScoreboardTags().contains("stanceBroken")) {
+                    stats.put(uuid + "_poise", entityPoise - 7.5F);
+                }
+                player.sendMessage("Jump Attack");
+            } else if (player.isSprinting() ) {
+                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
+                if(!entity.getScoreboardTags().contains("stanceBroken")) {
+                    stats.put(uuid + "_poise", entityPoise - 5);
+                }
+                player.sendMessage("Running Attack");
+            } else {
+                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
+                if(!entity.getScoreboardTags().contains("stanceBroken")) {
+                    stats.put(uuid + "_poise", entityPoise - 5);
+                }
+            }
+        }
+        if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Axe", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
+            stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
+        }
+        if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Hammer", NamedTextColor.DARK_GRAY))) {
+            stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
+        }
+        if(stats.get(uuid + "_poise") <= 0) {
+            player.playSound(player, Sound.BLOCK_ANVIL_LAND, 1, 0.7F);
+            player.playSound(player, Sound.ENTITY_IRON_GOLEM_REPAIR, 1, 1F);
+            stats.put(uuid + "_poise", stats.get(uuid + "_maxPoise"));
+            stanceBreak((LivingEntity) entity);
+        } else {
+            testInstance.poiseRegen(uuid);
+        }
+        testInstance.setMaxStamina(player.getName());
+        testInstance.staminaRegen(player.getName());
+        //Effects
+        player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1F,1.3F);
+        Location location = player.getEyeLocation();
+        location.subtract(0,0.3,0);
+        location.add(player.getLocation().getDirection().setY(0).normalize());
+        player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, location, 1,0,0,0,0);
     }
     @EventHandler
     public void onShift(PlayerToggleSneakEvent event) {
@@ -1149,19 +1218,15 @@ public class TriggerEvents implements Listener {
             float rollMultiplier;
             String rollDirection;
             if(player.getCurrentInput().isRight()) {
-                player.sendMessage("Right");
                 rollMultiplier = -1;
                 rollDirection = "right";
             } else if (player.getCurrentInput().isLeft()) {
-                player.sendMessage("Left");
                 rollMultiplier = 1;
                 rollDirection = "left";
             } else if (player.getCurrentInput().isBackward()) {
-                player.sendMessage("Back");
                 rollMultiplier = -1;
                 rollDirection = "back";
             } else {
-                player.sendMessage("Forward");
                 rollMultiplier = 1;
                 rollDirection = "forward";
             }
@@ -1222,8 +1287,7 @@ public class TriggerEvents implements Listener {
                 LivingEntity entity = (LivingEntity) event.getEntity();
                 displayEntityHP(entity, event.getFinalDamage());
             }
-            if(event.getDamageSource().getCausingEntity() instanceof Player) {
-                Player player = (Player) event.getDamageSource().getCausingEntity();
+            if(event.getDamageSource().getCausingEntity() instanceof Player player) {
                 event.setCancelled(true);
                 if(player.getGameMode().equals(GameMode.CREATIVE) && player.isOp()) {
                     if(event.getEntity().getType().equals(EntityType.INTERACTION)) {
@@ -1234,9 +1298,17 @@ public class TriggerEvents implements Listener {
                                     uuid = tag.replace("hitBox_", "");
                                 }
                             }
-                            player.sendMessage(uuid);
                             Entity entity = Bukkit.getEntity(UUID.fromString(uuid));
-                            player.sendMessage(entity.getType().toString());
+                            String selector = String.format("@p[tag=hurt_%s]", uuid);
+                            List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                            for (Entity entity1 : players) {
+                                Player player1 = (Player) entity1;
+                                if(entity.getScoreboardTags().contains("namelessKing")) {
+                                    addRunes(player1, 80000);
+                                }
+                                player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                player1.setExp(0);
+                            }
                             event.getEntity().remove();
                             entity.remove();
                             String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_death/play", uuid);
@@ -1247,7 +1319,7 @@ public class TriggerEvents implements Listener {
                         List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                         for (Entity entity1 : players) {
                             Player player1 = (Player) entity1;
-                            addRunes(player1);
+                            addRunes(player1, 10000);
                             player1.removeScoreboardTag("hurt_" + event.getEntity().getUniqueId().toString());
                             player1.setExp(0);
                         }
@@ -1269,7 +1341,7 @@ public class TriggerEvents implements Listener {
                     if(stats.get(player.getName() + "_stamina") >= 1) {
                         try {
                             //Damage Calculation
-                            double finalDamage = 0;
+                            int finalDamage = 0;
                             String lastLine = ((TextComponent) player.getInventory().getItemInMainHand().getItemMeta().lore().getLast()).content();
                             String displayName = ((TextComponent) player.getInventory().getItemInMainHand().getItemMeta().displayName()).content();
                             if(lastLine.equals("Straight Sword") || lastLine.equals("Great Sword") || lastLine.equals("Katana") || lastLine.equals("Axe") || lastLine.equals("Hammer") || lastLine.equals("Admin Item")) {
@@ -1299,9 +1371,64 @@ public class TriggerEvents implements Listener {
                             for(String tag : event.getEntity().getScoreboardTags()) {
                                 if(tag.contains("riposte_")) {
                                     if(event.getEntity().getNearbyEntities(0.4,0.5,0.4).contains(player)) {
-                                        riposteAttack(event.getEntity(), player, tag, finalDamage);
+                                        riposteAttack(event.getEntity(), player, tag, (double) finalDamage);
                                     }
                                     return;
+                                }
+                            }
+                            if(event.getEntity().getType().equals(EntityType.INTERACTION) && event.getEntity().getScoreboardTags().contains("interaction")) {
+                                String uuid = "";
+                                for(String tag : event.getEntity().getScoreboardTags()) {
+                                    if(tag.contains("hitBox_")) {
+                                        uuid = tag.replace("hitBox_", "");
+                                    }
+                                }
+                                if(uuid.isEmpty()) {
+                                    return;
+                                } else {
+                                    Entity entity = Bukkit.getEntity(UUID.fromString(uuid));
+                                    int health = -666;
+                                    int maxHealth = -666;
+                                    for (String tag : entity.getScoreboardTags()) {
+                                        if(tag.contains("health_")) {
+                                            health = Integer.parseInt(tag.replace("health_", ""));
+                                        }
+                                    }
+                                    for (String tag : entity.getScoreboardTags()) {
+                                        if(tag.contains("maxHealth_")) {
+                                            maxHealth = Integer.parseInt(tag.replace("maxHealth_", ""));
+                                        }
+                                    }
+                                    if(health == -666 || maxHealth == -666) {
+                                        return;
+                                    } else {
+                                        if(finalDamage >= health) {
+                                            String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+                                            List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                                            for(Entity entity1 : players) {
+                                                Player player1 = (Player) entity1;
+                                                if(entity.getScoreboardTags().contains("namelessKing")) {
+                                                    addRunes(player1, 80000);
+                                                }
+                                                player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                                player1.setExp(0);
+                                            }
+                                            event.getEntity().remove();
+                                            entity.remove();
+                                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_death/play", uuid);
+                                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                                        } else {
+                                            if(!player.getScoreboardTags().contains("hurt_" + entity.getUniqueId().toString())) {
+                                                player.addScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                            }
+                                            int newHealth = health - finalDamage;
+                                            entity.removeScoreboardTag("health_" + health);
+                                            entity.addScoreboardTag("health_" + newHealth);
+                                            displayBossHP(entity, newHealth, maxHealth);
+                                        }
+                                        staminaCost(entity, player);
+                                        return;
+                                    }
                                 }
                             }
                             player.sendMessage("Total Damage " + finalDamage);
@@ -1309,14 +1436,13 @@ public class TriggerEvents implements Listener {
                                 LivingEntity entity = (LivingEntity) event.getEntity();
                                 if(!player.getScoreboardTags().contains("hurt_" + entity.getUniqueId().toString())) {
                                     player.addScoreboardTag("hurt_" + entity.getUniqueId().toString());
-                                    player.sendMessage("a");
                                 }
                                 if(finalDamage >= entity.getHealth()) {
                                     String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
                                     List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                                     for(Entity entity1 : players) {
                                         Player player1 = (Player) entity1;
-                                        addRunes(player1);
+                                        addRunes(player1, 10000);
                                         player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
                                         player1.setExp(0);
                                     }
@@ -1324,62 +1450,7 @@ public class TriggerEvents implements Listener {
                                 entity.damage(finalDamage);
                             }
                             //Stamina Cost and Stance Damage
-                            String uuid = event.getEntity().getUniqueId().toString();
-                            float entityPoise = stats.get(uuid + "_poise");
-                            if(displayName.equals("Stance Breaker")) {
-                                if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
-                                    stats.put(uuid + "_poise", 0F);
-                                }
-                            }
-                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Straight Sword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
-                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
-                            }
-                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Greatsword", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
-                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
-                            }
-                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().equals(Component.text("Katana", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false))) {
-                                if(player.getFallDistance() != 0) {
-                                    stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 10);
-                                    if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
-                                        stats.put(uuid + "_poise", entityPoise - 7.5F);
-                                    }
-                                    player.sendMessage("Jump Attack");
-                                } else if (player.isSprinting() ) {
-                                    stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 15);
-                                    if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
-                                        stats.put(uuid + "_poise", entityPoise - 5);
-                                    }
-                                    player.sendMessage("Running Attack");
-                                } else {
-                                    stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 12);
-                                    if(!event.getEntity().getScoreboardTags().contains("stanceBroken")) {
-                                        stats.put(uuid + "_poise", entityPoise - 5);
-                                    }
-                                }
-                            }
-                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Axe", NamedTextColor.DARK_GRAY, TextDecoration.ITALIC))) {
-                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
-                            }
-                            if(player.getInventory().getItemInMainHand().getItemMeta().lore().getLast().children().contains(Component.text("Hammer", NamedTextColor.DARK_GRAY))) {
-                                stats.put(player.getName() + "_stamina", stats.get(player.getName() + "_stamina") - 13);
-                            }
-                            if(stats.get(uuid + "_poise") <= 0) {
-                                player.playSound(player, Sound.BLOCK_ANVIL_LAND, 1, 0.7F);
-                                player.playSound(player, Sound.ENTITY_IRON_GOLEM_REPAIR, 1, 1F);
-                                stats.put(uuid + "_poise", stats.get(uuid + "_maxPoise"));
-                                player.sendMessage("stance broken");
-                                stanceBreak((LivingEntity) event.getEntity());
-                            } else {
-                                testInstance.poiseRegen(uuid);
-                            }
-                            testInstance.setMaxStamina(player.getName());
-                            testInstance.staminaRegen(player.getName());
-                            //Effects
-                            player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1F,1.3F);
-                            Location location = player.getEyeLocation();
-                            location.subtract(0,0.3,0);
-                            location.add(player.getLocation().getDirection().setY(0).normalize());
-                            player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, location, 1,0,0,0,0);
+                            staminaCost(event.getEntity(), player);
                         } catch (NullPointerException ignore) {
                         }
                     }
@@ -2256,5 +2327,13 @@ public class TriggerEvents implements Listener {
     @EventHandler
     public void onPlayerDrop(PlayerDropItemEvent event) {
         event.setCancelled(true);
+    }
+    @EventHandler
+    public void onEntityRemove(EntityRemoveFromWorldEvent event) {
+        if (event.getEntity().getScoreboardTags().contains("namelessKing")) {
+            String uuid = event.getEntity().getUniqueId().toString();
+            stats.remove(uuid + "_maxPoise");
+            stats.remove(uuid + "_poise");
+        }
     }
 }
