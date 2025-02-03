@@ -1077,50 +1077,102 @@ public class TriggerEvents implements Listener {
                         player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 1F);
                         player.playSound(player, Sound.ENTITY_WITHER_BREAK_BLOCK, 1F, 1.5F);
                         player.swingMainHand();
-                        if (entity.getHealth() <= critDamage) {
-                            entity.setHealth(0.01);
+                        if(entity.getScoreboardTags().contains("namelessKing")) {
+                            bossRiposteDamage(player, entity, (int) Math.round(critDamage / 2));
                         } else {
-                            entity.setHealth(entity.getHealth() - critDamage);
+                            if (entity.getHealth() <= Math.round(critDamage / 2)) {
+                                entity.setHealth(0.01);
+                            } else {
+                                entity.setHealth(entity.getHealth() - Math.round(critDamage / 2));
+                            }
+                            displayEntityHP(entity, 0);
+                            entity.broadcastHurtAnimation(collection);
                         }
-                        displayEntityHP(entity, 0);
-                        entity.broadcastHurtAnimation(collection);
                     }
                     if(timer[0] == 45) {
                         player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 0.5F);
                         player.playSound(player, Sound.ENTITY_WITHER_BREAK_BLOCK, 1F, 1F);
                         player.swingMainHand();
-                        if (entity.getHealth() <= Math.round(critDamage / 4)) {
-                            entity.setHealth(0.01);
+                        if(entity.getScoreboardTags().contains("namelessKing")) {
+                            bossRiposteDamage(player, entity, (int) Math.round((3 * critDamage) / 4));
                         } else {
-                            entity.setHealth(entity.getHealth() - Math.round(critDamage / 4));
-                        };
-                        displayEntityHP(entity, 0);
-                        entity.broadcastHurtAnimation(collection);
-                        entity.setGravity(true);
-                        entity.setAI(true);
-                        entity.setVelocity(player.getLocation().getDirection().multiply(0.8));
+                            if (entity.getHealth() <= Math.round((3 * critDamage) / 4)) {
+                                entity.setHealth(0.01);
+                            } else {
+                                entity.setHealth(entity.getHealth() - Math.round((3 * critDamage) / 4));
+                            }
+                            displayEntityHP(entity, 0);
+                            entity.broadcastHurtAnimation(collection);
+                            entity.setAI(true);
+                            entity.setGravity(true);
+                            entity.setVelocity(player.getLocation().getDirection().multiply(0.8));
+                        }
                     }
                     if(timer[0] == 60) {
-                        player.removeScoreboardTag("dying");
-                        entity.removeScoreboardTag("iframe");
-                        if(entity.getHealth() <= 0.01) {
-                            entity.setAI(false);
-                            entity.getWorld().playSound(entity.getLocation(), entity.getDeathSound(), 1, 1);
-                            entity.broadcastHurtAnimation(collection);
-                            BukkitTask deathDelay = new BukkitRunnable() {
-                                @Override
-                                public void run() {
-                                    String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
-                                    List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
-                                    for(Entity entity1 : players) {
-                                        Player player1 = (Player) entity1;
-                                        addRunes(player1, 10000);
-                                        player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
-                                        player1.setExp(0);
-                                    }
-                                    entity.remove();
+                        if(entity.getScoreboardTags().contains("namelessKing")) {
+                            int health = -666;
+                            for (String tag : entity.getScoreboardTags()) {
+                                if (tag.contains("health_")) {
+                                    health = Integer.parseInt(tag.replace("health_", ""));
                                 }
-                            }.runTaskLater(Dsplugin.getInstance(), 10);
+                            }
+                            if (health == -666) {
+                                return;
+                            } else {
+                                player.removeScoreboardTag("dying");
+                                if(health == 0) {
+                                    entity.setAI(false);
+                                    String uuid = entity.getUniqueId().toString();
+                                    entity.remove();
+                                    for(Entity hitBox : Bukkit.selectEntities(Bukkit.getConsoleSender(), String.format("@e[tag=hitBox_%s]", uuid))) {
+                                        hitBox.remove();
+                                    }
+                                    String selector = String.format("@p[tag=hurt_%s]", uuid);
+                                    List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                                    String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_death/play", uuid);
+                                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                                    BukkitTask delay = new BukkitRunnable() {
+                                        @Override
+                                        public void run() {
+                                            for (Entity entity1 : players) {
+                                                Player player1 = (Player) entity1;
+                                                addRunes(player1, 80000);
+                                                player1.removeScoreboardTag("hurt_" + uuid);
+                                            }
+                                        }
+                                    }.runTaskLater(Dsplugin.getInstance(), 27);
+                                } else {
+                                    BukkitTask delay = new BukkitRunnable() {
+                                        @Override
+                                        public void run() {
+                                            entity.removeScoreboardTag("iframe");
+                                            entity.setAI(true);
+                                        }
+                                    }.runTaskLater(Dsplugin.getInstance(), 40);
+                                }
+                            }
+                        } else {
+                            player.removeScoreboardTag("dying");
+                            entity.removeScoreboardTag("iframe");
+                            if (entity.getHealth() <= 0.01) {
+                                entity.setAI(false);
+                                entity.getWorld().playSound(entity.getLocation(), entity.getDeathSound(), 1, 1);
+                                entity.broadcastHurtAnimation(collection);
+                                BukkitTask deathDelay = new BukkitRunnable() {
+                                    @Override
+                                    public void run() {
+                                        String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+                                        List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
+                                        for (Entity entity1 : players) {
+                                            Player player1 = (Player) entity1;
+                                            addRunes(player1, 10000);
+                                            player1.removeScoreboardTag("hurt_" + entity.getUniqueId().toString());
+                                            player1.setExp(0);
+                                        }
+                                        entity.remove();
+                                    }
+                                }.runTaskLater(Dsplugin.getInstance(), 10);
+                            }
                         }
                         cancel();
                     }
@@ -1201,11 +1253,46 @@ public class TriggerEvents implements Listener {
         testInstance.setMaxStamina(player.getName());
         testInstance.staminaRegen(player.getName());
         //Effects
+        if(entity.getScoreboardTags().contains("namelessKing")) {
+            player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 0.75F);
+        }
         player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1F,1.3F);
         Location location = player.getEyeLocation();
         location.subtract(0,0.3,0);
         location.add(player.getLocation().getDirection().setY(0).normalize());
         player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, location, 1,0,0,0,0);
+    }
+    public void bossRiposteDamage(Player player, Entity entity, int damage) {
+        int health = -666;
+        int maxHealth = -666;
+        for (String tag : entity.getScoreboardTags()) {
+            if(tag.contains("health_")) {
+                health = Integer.parseInt(tag.replace("health_", ""));
+            }
+        }
+        for (String tag : entity.getScoreboardTags()) {
+            if(tag.contains("maxHealth_")) {
+                maxHealth = Integer.parseInt(tag.replace("maxHealth_", ""));
+            }
+        }
+        if(health == -666 || maxHealth == -666) {
+            return;
+        } else {
+            int newHealth;
+            if (damage >= health) {
+                newHealth = 0;
+            } else {
+                newHealth = health - damage;
+            }
+            if(!player.getScoreboardTags().contains("hurt_" + entity.getUniqueId().toString())) {
+                player.addScoreboardTag("hurt_" + entity.getUniqueId().toString());
+            }
+            entity.removeScoreboardTag("health_" + health);
+            entity.addScoreboardTag("health_" + newHealth);
+            displayBossHP(entity, newHealth, maxHealth);
+            player.sendMessage(entity.getScoreboardTags().toString());
+            player.sendMessage(health + " - " + damage + " -> " + newHealth);
+        }
     }
     @EventHandler
     public void onShift(PlayerToggleSneakEvent event) {
@@ -1387,6 +1474,9 @@ public class TriggerEvents implements Listener {
                                     return;
                                 } else {
                                     Entity entity = Bukkit.getEntity(UUID.fromString(uuid));
+                                    if (entity.getScoreboardTags().contains("iframe")) {
+                                        return;
+                                    }
                                     int health = -666;
                                     int maxHealth = -666;
                                     for (String tag : entity.getScoreboardTags()) {
@@ -1402,6 +1492,7 @@ public class TriggerEvents implements Listener {
                                     if(health == -666 || maxHealth == -666) {
                                         return;
                                     } else {
+                                        staminaCost(entity, player);
                                         if(finalDamage >= health) {
                                             String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
                                             List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
@@ -1426,7 +1517,6 @@ public class TriggerEvents implements Listener {
                                             entity.addScoreboardTag("health_" + newHealth);
                                             displayBossHP(entity, newHealth, maxHealth);
                                         }
-                                        staminaCost(entity, player);
                                         return;
                                     }
                                 }
@@ -2310,8 +2400,8 @@ public class TriggerEvents implements Listener {
             String uuid = entity.getUniqueId().toString();
             if(entity.getScoreboardTags().contains("namelessKing")) {
                 entity.setInvisible(true);
-                stats.put(uuid + "_maxPoise", 215F);
-                stats.put(uuid + "_poise", 215F);
+                stats.put(uuid + "_maxPoise", 120F);
+                stats.put(uuid + "_poise", 120F);
                 Bukkit.broadcast(Component.text(entity.getScoreboardTags().toString()));
             } else {
                 entity.addScoreboardTag("maxPoise_80");
