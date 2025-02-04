@@ -1022,10 +1022,8 @@ public class TriggerEvents implements Listener {
         riposteLocation.setY((entity.getLocation().getY() + riposteLocation.getY()) / 2);
         riposteLocation.subtract(0,0.5,0);
         if(entity.getScoreboardTags().contains("namelessKing")) {
-            String command1 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_swing/stop", uuid);
-            String command2 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_walk/stop", uuid);
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command1);
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command2);
+            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/stagger", uuid);
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
             riposteLocation.setY(entity.getLocation().getY() + 1);
         }
         Vector direction = entity.getLocation().getDirection();
@@ -1046,6 +1044,10 @@ public class TriggerEvents implements Listener {
                     entity.setAI(true);
                     entity.removeScoreboardTag("stanceBroken");
                     riposte.remove();
+                    if(entity.getScoreboardTags().contains("namelessKing")) {
+                        String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_stagger/stop", uuid);
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                    }
                     Bukkit.broadcast(Component.text("Stance Regained"));
                 }
             }
@@ -1146,6 +1148,8 @@ public class TriggerEvents implements Listener {
                                         @Override
                                         public void run() {
                                             entity.removeScoreboardTag("iframe");
+                                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_stagger/stop", entity.getUniqueId());
+                                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                                             entity.setAI(true);
                                         }
                                     }.runTaskLater(Dsplugin.getInstance(), 40);
