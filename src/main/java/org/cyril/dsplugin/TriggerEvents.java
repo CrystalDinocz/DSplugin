@@ -1041,14 +1041,26 @@ public class TriggerEvents implements Listener {
             @Override
             public void run() {
                 if(entity.getScoreboardTags().contains("stanceBroken")) {
-                    entity.setAI(true);
-                    entity.removeScoreboardTag("stanceBroken");
-                    riposte.remove();
                     if(entity.getScoreboardTags().contains("namelessKing")) {
+                        riposte.remove();
                         String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_stagger/stop", uuid);
+                        String command1 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_regainstance/play", uuid);
                         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command1);
+                        BukkitTask animationDelay = new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                entity.setAI(true);
+                                entity.removeScoreboardTag("stanceBroken");
+                                Bukkit.broadcast(Component.text("Stance Regained"));
+                            }
+                        }.runTaskLater(Dsplugin.getInstance(), 50);
+                    } else {
+                        riposte.remove();
+                        entity.setAI(true);
+                        entity.removeScoreboardTag("stanceBroken");
+                        Bukkit.broadcast(Component.text("Stance Regained"));
                     }
-                    Bukkit.broadcast(Component.text("Stance Regained"));
                 }
             }
         }.runTaskLater(Dsplugin.getInstance(), 90);
