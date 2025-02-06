@@ -1109,6 +1109,8 @@ public class TriggerEvents implements Listener {
                         player.swingMainHand();
                         if(entity.getScoreboardTags().contains("namelessKing")) {
                             bossRiposteDamage(player, entity, (int) Math.round((3 * critDamage) / 4));
+                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/play", uuid);
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                         } else {
                             if (entity.getHealth() <= Math.round((3 * critDamage) / 4)) {
                                 entity.setHealth(0.01);
@@ -1143,8 +1145,10 @@ public class TriggerEvents implements Listener {
                                     }
                                     String selector = String.format("@p[tag=hurt_%s]", uuid);
                                     List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
-                                    String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_death/play", uuid);
+                                    String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_stagger/stop", uuid);
+                                    String command1 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/play", uuid);
                                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command1);
                                     BukkitTask delay = new BukkitRunnable() {
                                         @Override
                                         public void run() {
@@ -1160,7 +1164,7 @@ public class TriggerEvents implements Listener {
                                         @Override
                                         public void run() {
                                             entity.removeScoreboardTag("iframe");
-                                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_stagger/stop", entity.getUniqueId());
+                                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/stop", entity.getUniqueId());
                                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                                             entity.setAI(true);
                                         }
