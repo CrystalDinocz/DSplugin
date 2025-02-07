@@ -1109,8 +1109,10 @@ public class TriggerEvents implements Listener {
                         player.swingMainHand();
                         if(entity.getScoreboardTags().contains("namelessKing")) {
                             bossRiposteDamage(player, entity, (int) Math.round((3 * critDamage) / 4));
-                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/play", uuid);
+                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_stagger/stop", uuid);
+                            String command1 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/play", uuid);
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command1);
                         } else {
                             if (entity.getHealth() <= Math.round((3 * critDamage) / 4)) {
                                 entity.setHealth(0.01);
@@ -1143,12 +1145,8 @@ public class TriggerEvents implements Listener {
                                     for(Entity hitBox : Bukkit.selectEntities(Bukkit.getConsoleSender(), String.format("@e[tag=hitBox_%s]", uuid))) {
                                         hitBox.remove();
                                     }
-                                    String selector = String.format("@p[tag=hurt_%s]", uuid);
+                                    String selector = String.format("@e[tag=hurt_%s]", uuid);
                                     List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
-                                    String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_stagger/stop", uuid);
-                                    String command1 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/play", uuid);
-                                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-                                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command1);
                                     BukkitTask delay = new BukkitRunnable() {
                                         @Override
                                         public void run() {
@@ -1163,12 +1161,23 @@ public class TriggerEvents implements Listener {
                                     BukkitTask delay = new BukkitRunnable() {
                                         @Override
                                         public void run() {
-                                            entity.removeScoreboardTag("iframe");
-                                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/stop", entity.getUniqueId());
+                                            String command = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_riposte/stop", uuid);
+                                            String command1 = String.format("execute as @e[tag=model_%s] run function animated_java:knight/animations/animation_model_walk/stop", uuid);
                                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+                                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command1);
+                                            List<Entity> models = Bukkit.selectEntities(Bukkit.getConsoleSender(), String.format("@e[tag=model_%s]", uuid));
+                                            Entity model = models.getFirst();
+                                            Vector vector = model.getLocation().getDirection();
+                                            vector.setY(0);
+                                            vector.normalize();
+                                            vector.multiply(3.06875);
+                                            Location newLocation = model.getLocation().subtract(vector);
+                                            entity.teleport(newLocation);
+                                            entity.removeScoreboardTag("iframe");
+                                            Bukkit.broadcast(Component.text("hoho"));
                                             entity.setAI(true);
                                         }
-                                    }.runTaskLater(Dsplugin.getInstance(), 40);
+                                    }.runTaskLater(Dsplugin.getInstance(), 99);
                                 }
                             }
                         } else {
@@ -1181,7 +1190,7 @@ public class TriggerEvents implements Listener {
                                 BukkitTask deathDelay = new BukkitRunnable() {
                                     @Override
                                     public void run() {
-                                        String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+                                        String selector = String.format("@e[tag=hurt_%s]", entity.getUniqueId().toString());
                                         List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                                         for (Entity entity1 : players) {
                                             Player player1 = (Player) entity1;
@@ -1204,7 +1213,7 @@ public class TriggerEvents implements Listener {
     }
     public void displayEntityHP(LivingEntity entity, double modifier) {
         if(!entity.isDead()) {
-            String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+            String selector = String.format("@e[tag=hurt_%s]", entity.getUniqueId().toString());
             List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
             for (Entity entity1 : players) {
                 Player player = (Player) entity1;
@@ -1406,7 +1415,7 @@ public class TriggerEvents implements Listener {
                                 }
                             }
                             Entity entity = Bukkit.getEntity(UUID.fromString(uuid));
-                            String selector = String.format("@p[tag=hurt_%s]", uuid);
+                            String selector = String.format("@e[tag=hurt_%s]", uuid);
                             List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                             for (Entity entity1 : players) {
                                 Player player1 = (Player) entity1;
@@ -1422,7 +1431,7 @@ public class TriggerEvents implements Listener {
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                         }
                     } else {
-                        String selector = String.format("@p[tag=hurt_%s]", event.getEntity().getUniqueId().toString());
+                        String selector = String.format("@e[tag=hurt_%s]", event.getEntity().getUniqueId().toString());
                         List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                         for (Entity entity1 : players) {
                             Player player1 = (Player) entity1;
@@ -1514,7 +1523,7 @@ public class TriggerEvents implements Listener {
                                     } else {
                                         staminaCost(entity, player);
                                         if(finalDamage >= health) {
-                                            String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+                                            String selector = String.format("@e[tag=hurt_%s]", entity.getUniqueId().toString());
                                             List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                                             for(Entity entity1 : players) {
                                                 Player player1 = (Player) entity1;
@@ -1548,7 +1557,7 @@ public class TriggerEvents implements Listener {
                                     player.addScoreboardTag("hurt_" + entity.getUniqueId().toString());
                                 }
                                 if(finalDamage >= entity.getHealth()) {
-                                    String selector = String.format("@p[tag=hurt_%s]", entity.getUniqueId().toString());
+                                    String selector = String.format("@e[tag=hurt_%s]", entity.getUniqueId().toString());
                                     List<Entity> players = Bukkit.selectEntities(Bukkit.getConsoleSender(), selector);
                                     for(Entity entity1 : players) {
                                         Player player1 = (Player) entity1;
